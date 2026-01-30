@@ -94,6 +94,7 @@ let icons = [
     'twemoji:flag-germany',
     'ic:round-download',
     'ic:outline-integration-instructions',
+    'ri:admin-fill',
 ]
 
 const output = path.normalize(path.join(__dirname, '../static/assets/js/icons.dist.js'))
