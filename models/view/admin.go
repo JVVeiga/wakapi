@@ -20,4 +20,19 @@ type AdminUserDetailViewModel struct {
 	MaskedMainKey string
 	TotalTime     string
 	LastActivity  string
+	UserTeams     []*models.Team
+}
+
+type AdminTeamsViewModel struct {
+	SharedLoggedInViewModel
+	Teams            []*models.Team
+	TeamMemberCounts map[string]int64
+	Users            []*models.User
+}
+
+type AdminTeamDetailViewModel struct {
+	SharedLoggedInViewModel
+	Team     *models.Team
+	Members  []*models.TeamMember
+	AllUsers []*models.User
 }

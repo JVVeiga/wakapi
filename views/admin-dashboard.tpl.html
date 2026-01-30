@@ -31,6 +31,16 @@
             </div>
         </div>
 
+        <div class="mb-8">
+            <a href="admin/teams" class="px-4 py-3 rounded-md border-2 border-accent flex items-center justify-between hover:bg-focused transition-colors">
+                <div class="flex items-center space-x-3">
+                    <span class="iconify inline text-xl text-accent" data-icon="bi:people-fill"></span>
+                    <span class="text-foreground font-semibold">Manage Teams</span>
+                </div>
+                <span class="text-secondary">&rarr;</span>
+            </a>
+        </div>
+
         <h2 class="font-semibold text-lg text-foreground mb-4">Users</h2>
         <ol class="space-y-3 mb-8">
             {{ range .Users }}

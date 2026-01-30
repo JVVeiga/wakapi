@@ -153,3 +153,20 @@ type IApiKeyRepository interface {
 	Insert(*models.ApiKey) (*models.ApiKey, error)
 	Delete(string) error
 }
+
+type ITeamRepository interface {
+	IBaseRepository
+	GetAll() ([]*models.Team, error)
+	GetByID(string) (*models.Team, error)
+	GetByUser(string) ([]*models.Team, error)
+	GetByOwner(string) ([]*models.Team, error)
+	Insert(*models.Team) (*models.Team, error)
+	InsertWithOwner(*models.Team, *models.TeamMember) (*models.Team, error)
+	Update(*models.Team) (*models.Team, error)
+	Delete(string) error
+	GetMembersByTeam(string) ([]*models.TeamMember, error)
+	GetMemberByTeamAndUser(string, string) (*models.TeamMember, error)
+	AddMember(*models.TeamMember) (*models.TeamMember, error)
+	RemoveMember(string, string) error
+	CountByTeam(string) (int64, error)
+}

@@ -69,6 +69,7 @@ var (
 	metricsRepository         *repositories.MetricsRepository
 	durationRepository        *repositories.DurationRepository
 	apiKeyRepository          repositories.IApiKeyRepository
+	teamRepository            repositories.ITeamRepository
 )
 
 var (
@@ -89,6 +90,7 @@ var (
 	housekeepingService    services.IHousekeepingService
 	miscService            services.IMiscService
 	apiKeyService          services.IApiKeyService
+	teamService            services.ITeamService
 )
 
 // TODO: Refactor entire project to be structured after business domains
@@ -179,12 +181,14 @@ func main() {
 	metricsRepository = repositories.NewMetricsRepository(db)
 	durationRepository = repositories.NewDurationRepository(db)
 	apiKeyRepository = repositories.NewApiKeyRepository(db)
+	teamRepository = repositories.NewTeamRepository(db)
 
 	// Services
 	mailService = mail.NewMailService()
 	aliasService = services.NewAliasService(aliasRepository)
 	keyValueService = services.NewKeyValueService(keyValueRepository)
 	apiKeyService = services.NewApiKeyService(apiKeyRepository)
+	teamService = services.NewTeamService(teamRepository)
 	userService = services.NewUserService(keyValueService, mailService, apiKeyService, userRepository)
 	languageMappingService = services.NewLanguageMappingService(languageMappingRepository)
 	projectLabelService = services.NewProjectLabelService(projectLabelRepository)
@@ -249,7 +253,7 @@ func main() {
 	imprintHandler := routes.NewImprintHandler(keyValueService)
 	setupHandler := routes.NewSetupHandler(userService)
 	leaderboardHandler := condition.Ternary[bool, routes.Handler](config.App.LeaderboardEnabled, routes.NewLeaderboardHandler(userService, leaderboardService), routes.NewNoopHandler())
-	adminHandler := routes.NewAdminHandler(userService, heartbeatService, summaryService, apiKeyService)
+	adminHandler := routes.NewAdminHandler(userService, heartbeatService, summaryService, apiKeyService, teamService)
 	miscHandler := routes.NewMiscHandler(userService)
 
 	// Other Handlers

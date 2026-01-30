@@ -182,3 +182,18 @@ type IApiKeyService interface {
 	Create(*models.ApiKey) (*models.ApiKey, error)
 	Delete(*models.ApiKey) error
 }
+
+type ITeamService interface {
+	CreateTeam(string, string, string) (*models.Team, error)
+	DeleteTeam(string) error
+	UpdateTeam(*models.Team) (*models.Team, error)
+	GetByID(string) (*models.Team, error)
+	GetByUser(string) ([]*models.Team, error)
+	GetAll() ([]*models.Team, error)
+	AddMember(string, string, string) (*models.TeamMember, error)
+	RemoveMember(string, string) error
+	GetMembers(string) ([]*models.TeamMember, error)
+	CountMembers(string) (int64, error)
+	IsTeamOwner(string, string) (bool, error)
+	IsTeamMember(string, string) (bool, error)
+}

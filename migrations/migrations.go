@@ -67,6 +67,12 @@ func GetMigrationFunc(cfg *config.Config) GormMigrationFunc {
 			if err := db.AutoMigrate(&models.ApiKey{}); err != nil && !cfg.Db.AutoMigrateFailSilently {
 				return err
 			}
+			if err := db.AutoMigrate(&models.Team{}); err != nil && !cfg.Db.AutoMigrateFailSilently {
+				return err
+			}
+			if err := db.AutoMigrate(&models.TeamMember{}); err != nil && !cfg.Db.AutoMigrateFailSilently {
+				return err
+			}
 			return nil
 		}
 	}

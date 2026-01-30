@@ -95,6 +95,7 @@ let icons = [
     'ic:round-download',
     'ic:outline-integration-instructions',
     'ri:admin-fill',
+    'bi:people-fill',
 ]
 
 const output = path.normalize(path.join(__dirname, '../static/assets/js/icons.dist.js'))

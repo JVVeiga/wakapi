@@ -73,6 +73,25 @@
             </div>
         </div>
 
+        <div class="bg-card rounded-md p-4 px-6 border-2 border-muted mb-10">
+            <h2 class="font-semibold text-foreground mb-4">Teams</h2>
+            {{ if .UserTeams }}
+            <div class="space-y-2">
+                {{ range .UserTeams }}
+                <a href="admin/teams/{{ .ID }}" class="flex items-center justify-between p-3 rounded bg-background border border-muted hover:bg-focused transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <span class="iconify inline text-lg text-accent" data-icon="bi:people-fill"></span>
+                        <span class="text-foreground font-medium">{{ .Name }}</span>
+                    </div>
+                    <span class="text-secondary text-sm">&rarr;</span>
+                </a>
+                {{ end }}
+            </div>
+            {{ else }}
+            <p class="text-sm text-muted">Not a member of any team</p>
+            {{ end }}
+        </div>
+
         <div class="bg-card rounded-md p-4 px-6 border-2 border-muted">
             <h2 class="font-semibold text-foreground mb-4">Actions</h2>
             <div class="flex gap-3">
