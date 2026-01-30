@@ -39,9 +39,6 @@ func (h *LeaderboardHandler) RegisterRoutes(router chi.Router) {
 	authMiddleware := middlewares.NewAuthenticateMiddleware(h.userService)
 	authMiddleware = authMiddleware.WithRedirectTarget(defaultErrorRedirectTarget())
 	authMiddleware = authMiddleware.WithRedirectErrorMessage("unauthorized")
-	if !h.config.App.LeaderboardRequireAuth {
-		authMiddleware = authMiddleware.WithOptionalFor("/")
-	}
 
 	r.Use(authMiddleware.Handler)
 	r.Get("/", h.GetIndex)
