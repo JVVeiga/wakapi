@@ -56,7 +56,13 @@ func (h *TeamsHandler) GetIndex(w http.ResponseWriter, r *http.Request) {
 
 	user := middlewares.GetPrincipal(r)
 
-	teams, err := h.teamSrvc.GetByUser(user.ID)
+	var teams []*models.Team
+	var err error
+	if user.IsAdmin {
+		teams, err = h.teamSrvc.GetAll()
+	} else {
+		teams, err = h.teamSrvc.GetByUser(user.ID)
+	}
 	if err != nil {
 		teams = []*models.Team{}
 	}
@@ -102,17 +108,19 @@ func (h *TeamsHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isMember, err := h.teamSrvc.IsTeamMember(teamID, user.ID)
-	if err != nil {
-		conf.Log().Request(r).Error("failed to check team membership", "error", err, "team", teamID, "user", user.ID)
-		routeutils.SetError(r, w, "internal error")
-		http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
-		return
-	}
-	if !isMember {
-		routeutils.SetError(r, w, "you are not a member of this team")
-		http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
-		return
+	if !user.IsAdmin {
+		isMember, err := h.teamSrvc.IsTeamMember(teamID, user.ID)
+		if err != nil {
+			conf.Log().Request(r).Error("failed to check team membership", "error", err, "team", teamID, "user", user.ID)
+			routeutils.SetError(r, w, "internal error")
+			http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
+			return
+		}
+		if !isMember {
+			routeutils.SetError(r, w, "you are not a member of this team")
+			http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
+			return
+		}
 	}
 
 	members, _ := h.teamSrvc.GetMembers(teamID)
