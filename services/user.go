@@ -169,6 +169,10 @@ func (srv *UserService) GetAll() ([]*models.User, error) {
 	return srv.repository.GetAll()
 }
 
+func (srv *UserService) GetAllPaginated(page, pageSize int) ([]*models.User, error) {
+	return srv.repository.GetAllPaginated(page, pageSize)
+}
+
 func (srv *UserService) GetAllMapped() (map[string]*models.User, error) {
 	users, err := srv.repository.GetAll()
 	if err != nil {

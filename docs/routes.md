@@ -39,6 +39,11 @@ Montadas em `rootRouter` com `SecurityMiddleware` (headers CSP, X-Frame-Options)
 | GET | `/admin` | AdminHandler.GetDashboard | Sim (admin) | Dashboard administrativo |
 | GET | `/admin/users/{id}` | AdminHandler.GetUserDetail | Sim (admin) | Detalhes de um usuário |
 | POST | `/admin/users/{id}` | AdminHandler.PostUserAction | Sim (admin) | Ações admin (promover/demover) |
+| GET | `/admin/teams` | AdminHandler.GetTeams | Sim (admin) | Lista de times |
+| POST | `/admin/teams` | AdminHandler.PostCreateTeam | Sim (admin) | Criar time |
+| GET | `/admin/teams/{id}` | AdminHandler.GetTeamDetail | Sim (admin) | Detalhes de um time |
+| POST | `/admin/teams/{id}` | AdminHandler.PostTeamAction | Sim (admin) | Ações no time (editar/deletar) |
+| POST | `/admin/teams/{id}/members` | AdminHandler.PostTeamMemberAction | Sim (admin) | Adicionar/remover membro |
 
 ## API REST
 

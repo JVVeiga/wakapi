@@ -11,6 +11,9 @@ type AdminDashboardViewModel struct {
 	OnlineUsers     int
 	TotalHeartbeats int64
 	Users           []*models.User
+	Page            int
+	PageSize        int
+	TotalPages      int
 }
 
 type AdminUserDetailViewModel struct {

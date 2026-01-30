@@ -90,6 +90,14 @@ func (m *UserRepositoryMock) Count() (int64, error) {
 	return args.Get(0).(int64), args.Error(1)
 }
 
+func (m *UserRepositoryMock) GetAllPaginated(page, pageSize int) ([]*models.User, error) {
+	args := m.Called(page, pageSize)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.User), args.Error(1)
+}
+
 func (m *UserRepositoryMock) InsertOrGet(user *models.User) (*models.User, bool, error) {
 	args := m.Called(user)
 	if args.Get(0) == nil {

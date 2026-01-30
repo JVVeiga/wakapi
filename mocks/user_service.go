@@ -57,6 +57,11 @@ func (m *UserServiceMock) GetAll() ([]*models.User, error) {
 	return args.Get(0).([]*models.User), args.Error(1)
 }
 
+func (m *UserServiceMock) GetAllPaginated(page, pageSize int) ([]*models.User, error) {
+	args := m.Called(page, pageSize)
+	return args.Get(0).([]*models.User), args.Error(1)
+}
+
 func (m *UserServiceMock) GetAllMapped() (map[string]*models.User, error) {
 	args := m.Called()
 	return args.Get(0).(map[string]*models.User), args.Error(1)

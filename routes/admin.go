@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -63,12 +64,19 @@ func (h *AdminHandler) RegisterRoutes(router chi.Router) {
 	router.Mount("/admin", r)
 }
 
+const adminUsersPageSize = 15
+
 func (h *AdminHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 	if h.config.IsDev() {
 		loadTemplates()
 	}
 
 	user := middlewares.GetPrincipal(r)
+
+	page := 1
+	if p, err := strconv.Atoi(r.URL.Query().Get("page")); err == nil && p > 0 {
+		page = p
+	}
 
 	totalUsers, _ := h.userSrvc.Count()
 	onlineUsers, _ := h.userSrvc.CountCurrentlyOnline()
@@ -79,7 +87,15 @@ func (h *AdminHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 		activeUsers = len(active)
 	}
 
-	allUsers, _ := h.userSrvc.GetAll()
+	totalPages := int((totalUsers + int64(adminUsersPageSize) - 1) / int64(adminUsersPageSize))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+	if page > totalPages {
+		page = totalPages
+	}
+
+	users, _ := h.userSrvc.GetAllPaginated(page, adminUsersPageSize)
 
 	vm := &view.AdminDashboardViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
@@ -90,7 +106,10 @@ func (h *AdminHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 		ActiveUsers:     activeUsers,
 		OnlineUsers:     onlineUsers,
 		TotalHeartbeats: totalHeartbeats,
-		Users:           allUsers,
+		Users:           users,
+		Page:            page,
+		PageSize:        adminUsersPageSize,
+		TotalPages:      totalPages,
 	}
 
 	if err := templates[conf.AdminDashboardTemplate].Execute(w, routeutils.WithSessionMessages(vm, r, w)); err != nil {
@@ -387,7 +406,8 @@ func (h *AdminHandler) PostTeamMemberAction(w http.ResponseWriter, r *http.Reque
 			role = models.TeamRoleMember
 		}
 		if _, err := h.teamSrvc.AddMember(teamID, userID, role); err != nil {
-			routeutils.SetError(r, w, fmt.Sprintf("failed to add member: %v", err))
+			conf.Log().Request(r).Error("failed to add team member", "error", err)
+			routeutils.SetError(r, w, "failed to add member")
 		} else {
 			conf.Log().Info("team member added",
 				"admin", adminUser.ID,
@@ -399,7 +419,8 @@ func (h *AdminHandler) PostTeamMemberAction(w http.ResponseWriter, r *http.Reque
 
 	case "remove":
 		if err := h.teamSrvc.RemoveMember(teamID, userID); err != nil {
-			routeutils.SetError(r, w, fmt.Sprintf("failed to remove member: %v", err))
+			conf.Log().Request(r).Error("failed to remove team member", "error", err)
+			routeutils.SetError(r, w, "failed to remove member")
 		} else {
 			conf.Log().Info("team member removed",
 				"admin", adminUser.ID,

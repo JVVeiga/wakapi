@@ -32,6 +32,7 @@ wakapi/
 │   ├── project_label.go         # Labels de projetos
 │   ├── language_mapping.go      # Mapeamento extensão → linguagem
 │   ├── leaderboard.go           # Item do leaderboard
+│   ├── team.go                  # Time e membros de time
 │   ├── diagnostics.go           # Dados de diagnóstico
 │   ├── shared.go                # KeyStringValue, CustomTime
 │   ├── interval.go              # Intervalos de tempo
@@ -53,6 +54,7 @@ wakapi/
 │   ├── language_mapping.go      # LanguageMappingRepository
 │   ├── project_label.go         # ProjectLabelRepository
 │   ├── leaderboard.go           # LeaderboardRepository
+│   ├── team.go                  # TeamRepository
 │   ├── diagnostics.go           # DiagnosticsRepository
 │   └── metrics.go               # MetricsRepository (Prometheus)
 ├── services/                    # Lógica de negócio
@@ -68,6 +70,7 @@ wakapi/
 │   ├── language_mapping.go      # Mapeamento de linguagens
 │   ├── project_label.go         # Labels de projetos
 │   ├── leaderboard.go           # Leaderboard
+│   ├── team.go                  # Gestão de times e membros
 │   ├── report.go                # Relatórios semanais por e-mail
 │   ├── housekeeping.go          # Limpeza e manutenção
 │   ├── misc.go                  # Tarefas diversas (contagem, notificações)

@@ -49,6 +49,18 @@ func (r *UserRepository) GetAll() ([]*models.User, error) {
 	return users, nil
 }
 
+func (r *UserRepository) GetAllPaginated(page, pageSize int) ([]*models.User, error) {
+	var users []*models.User
+	if err := r.db.
+		Order("id asc").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func (r *UserRepository) GetMany(ids []string) ([]*models.User, error) {
 	var users []*models.User
 	if err := r.db.

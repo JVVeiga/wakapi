@@ -119,6 +119,7 @@ type IUserRepository interface {
 	FindOne(user models.User) (*models.User, error)
 	GetByIds([]string) ([]*models.User, error)
 	GetAll() ([]*models.User, error)
+	GetAllPaginated(int, int) ([]*models.User, error)
 	GetMany([]string) ([]*models.User, error)
 	GetAllByReports(bool) ([]*models.User, error)
 	GetAllByLeaderboard(bool) ([]*models.User, error)

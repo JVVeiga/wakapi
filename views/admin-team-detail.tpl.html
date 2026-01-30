@@ -80,13 +80,7 @@
                             {{ end }}
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-muted mb-1">Role</label>
-                        <select name="role" class="px-3 py-2 border border-muted rounded-md bg-background text-foreground text-sm">
-                            <option value="member">Member</option>
-                            <option value="owner">Owner</option>
-                        </select>
-                    </div>
+                    <input type="hidden" name="role" value="member">
                     <button type="submit" class="btn-primary text-sm">Add</button>
                     <button type="button" onclick="document.getElementById('addMemberForm').classList.add('hidden')" class="btn-default text-sm">Cancel</button>
                 </form>
