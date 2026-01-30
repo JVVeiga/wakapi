@@ -16,4 +16,6 @@ const (
 	AdminUserDetailTemplate   = "admin-user-detail.tpl.html"
 	AdminTeamsTemplate        = "admin-teams.tpl.html"
 	AdminTeamDetailTemplate   = "admin-team-detail.tpl.html"
+	TeamsTemplate             = "teams.tpl.html"
+	TeamDetailTemplate        = "team-detail.tpl.html"
 )

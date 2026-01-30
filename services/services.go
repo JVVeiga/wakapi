@@ -116,6 +116,7 @@ type ISummaryService interface {
 	DeleteByUser(string) error
 	DeleteByUserBefore(string, time.Time) error
 	Insert(*models.Summary) error
+	MergeSummariesAcrossUsers([]*models.Summary) (*models.Summary, error)
 }
 
 type IActivityService interface {

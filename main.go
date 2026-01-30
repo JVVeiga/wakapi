@@ -254,6 +254,7 @@ func main() {
 	setupHandler := routes.NewSetupHandler(userService)
 	leaderboardHandler := condition.Ternary[bool, routes.Handler](config.App.LeaderboardEnabled, routes.NewLeaderboardHandler(userService, leaderboardService), routes.NewNoopHandler())
 	adminHandler := routes.NewAdminHandler(userService, heartbeatService, summaryService, apiKeyService, teamService)
+	teamsHandler := routes.NewTeamsHandler(userService, teamService, summaryService)
 	miscHandler := routes.NewMiscHandler(userService)
 
 	// Other Handlers
@@ -302,6 +303,7 @@ func main() {
 	relayHandler.RegisterRoutes(rootRouter)
 	miscHandler.RegisterRoutes(rootRouter)
 	adminHandler.RegisterRoutes(rootRouter)
+	teamsHandler.RegisterRoutes(rootRouter)
 
 	// API route registrations
 	rootApiHandler.RegisterRoutes(apiRouter)

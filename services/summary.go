@@ -434,6 +434,54 @@ func (srv *SummaryService) mergeSummaryItems(existing []*models.SummaryItem, new
 	return itemList
 }
 
+func (srv *SummaryService) MergeSummariesAcrossUsers(summaries []*models.Summary) (*models.Summary, error) {
+	if len(summaries) < 1 {
+		return models.NewEmptySummary(), nil
+	}
+
+	var minTime, maxTime time.Time
+	minTime = time.Now()
+
+	finalSummary := &models.Summary{
+		Projects:         make([]*models.SummaryItem, 0),
+		Languages:        make([]*models.SummaryItem, 0),
+		Editors:          make([]*models.SummaryItem, 0),
+		OperatingSystems: make([]*models.SummaryItem, 0),
+		Machines:         make([]*models.SummaryItem, 0),
+		Labels:           make([]*models.SummaryItem, 0),
+		Branches:         make([]*models.SummaryItem, 0),
+		Entities:         make([]*models.SummaryItem, 0),
+		Categories:       make([]*models.SummaryItem, 0),
+	}
+
+	for _, s := range summaries {
+		totalTime := s.TotalTime()
+
+		if s.FromTime.T().Before(minTime) && totalTime > 0 {
+			minTime = s.FromTime.T()
+		}
+		if s.ToTime.T().After(maxTime) && totalTime > 0 {
+			maxTime = s.ToTime.T()
+		}
+
+		finalSummary.Projects = srv.mergeSummaryItems(finalSummary.Projects, s.Projects)
+		finalSummary.Languages = srv.mergeSummaryItems(finalSummary.Languages, s.Languages)
+		finalSummary.Editors = srv.mergeSummaryItems(finalSummary.Editors, s.Editors)
+		finalSummary.OperatingSystems = srv.mergeSummaryItems(finalSummary.OperatingSystems, s.OperatingSystems)
+		finalSummary.Machines = srv.mergeSummaryItems(finalSummary.Machines, s.Machines)
+		finalSummary.Labels = srv.mergeSummaryItems(finalSummary.Labels, s.Labels)
+		finalSummary.Branches = srv.mergeSummaryItems(finalSummary.Branches, s.Branches)
+		finalSummary.Entities = srv.mergeSummaryItems(finalSummary.Entities, s.Entities)
+		finalSummary.Categories = srv.mergeSummaryItems(finalSummary.Categories, s.Categories)
+		finalSummary.NumHeartbeats += s.NumHeartbeats
+	}
+
+	finalSummary.FromTime = models.CustomTime(minTime)
+	finalSummary.ToTime = models.CustomTime(condition.Ternary(maxTime.Before(minTime), minTime, maxTime))
+
+	return finalSummary, nil
+}
+
 func (srv *SummaryService) getMissingIntervals(from, to time.Time, summaries []*models.Summary, precise bool) []*models.Interval {
 	if len(summaries) == 0 {
 		return []*models.Interval{{from, to}}

@@ -45,3 +45,8 @@ func (m *SummaryServiceMock) Insert(s *models.Summary) error {
 	args := m.Called(s)
 	return args.Error(0)
 }
+
+func (m *SummaryServiceMock) MergeSummariesAcrossUsers(summaries []*models.Summary) (*models.Summary, error) {
+	args := m.Called(summaries)
+	return args.Get(0).(*models.Summary), args.Error(1)
+}

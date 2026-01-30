@@ -22,14 +22,10 @@
         <span class="text-foreground hidden lg:inline-block">Projects</span>
     </a>
 
-    {{ if false }}
-    <div class="menu-item hidden sm:flex imp:cursor-not-allowed">
-        <span class="iconify inline text-2xl text-muted" data-icon="bi:people-fill"></span>
-        <a class="text-muted leading-none hidden lg:inline-block">Team<br>
-            <span class="text-xxs whitespace-nowrap">(coming soon)</span>
-        </a>
-    </div>
-    {{ end }}
+    <a class="menu-item" href="teams">
+        <span class="iconify inline text-2xl text-secondary" data-icon="bi:people-fill"></span>
+        <span class="text-foreground hidden lg:inline-block">Teams</span>
+    </a>
 
     <div class="menu-item relative" @click="state.showDropdownResources = !state.showDropdownResources" data-trigger-for="showDropdownResources">
         <span class="iconify inline text-2xl text-secondary" data-icon="ph:books-bold"></span>
