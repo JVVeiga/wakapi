@@ -77,6 +77,13 @@
         <span class="text-secondary hidden lg:inline-block">Settings</span>
     </a>
 
+    {{ if .SharedLoggedInViewModel.User.IsAdmin }}
+    <a class="menu-item" href="admin">
+        <span class="iconify inline text-2xl text-secondary" data-icon="ri:admin-fill"></span>
+        <span class="text-secondary hidden lg:inline-block">Admin</span>
+    </a>
+    {{ end }}
+
     <div class="grow"></div>
 
     <div class="shrink-0 menu-item relative" @click="state.showDropdownUser = !state.showDropdownUser" data-trigger-for="showDropdownUser">

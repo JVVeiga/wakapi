@@ -265,6 +265,13 @@ func (srv *UserService) Update(user *models.User) (*models.User, error) {
 	return srv.repository.Update(user)
 }
 
+func (srv *UserService) SetAdmin(user *models.User, isAdmin bool) (*models.User, error) {
+	user.IsAdmin = isAdmin
+	srv.FlushUserCache(user.ID)
+	srv.notifyUpdate(user)
+	return srv.repository.Update(user)
+}
+
 func (srv *UserService) ChangeUserId(user *models.User, newUserId string) (*models.User, error) {
 	if !srv.checkUpdateCascade() {
 		return nil, errors.New("sqlite database too old to perform user id change consistently")

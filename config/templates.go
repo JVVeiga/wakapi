@@ -11,5 +11,7 @@ const (
 	SettingsTemplate      = "settings.tpl.html"
 	SummaryTemplate       = "summary.tpl.html"
 	LeaderboardTemplate   = "leaderboard.tpl.html"
-	ProjectsTemplate      = "projects.tpl.html"
+	ProjectsTemplate          = "projects.tpl.html"
+	AdminDashboardTemplate    = "admin-dashboard.tpl.html"
+	AdminUserDetailTemplate   = "admin-user-detail.tpl.html"
 )

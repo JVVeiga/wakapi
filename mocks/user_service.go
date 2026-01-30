@@ -142,6 +142,11 @@ func (m *UserServiceMock) ChangeUserId(user *models.User, s1 string) (*models.Us
 	return args.Get(0).(*models.User), args.Error(1)
 }
 
+func (m *UserServiceMock) SetAdmin(user *models.User, isAdmin bool) (*models.User, error) {
+	args := m.Called(user, isAdmin)
+	return args.Get(0).(*models.User), args.Error(1)
+}
+
 func (m *UserServiceMock) FlushCache() {
 	m.Called()
 }

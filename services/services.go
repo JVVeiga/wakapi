@@ -165,6 +165,7 @@ type IUserService interface {
 	CountCurrentlyOnline() (int, error)
 	CreateOrGet(*models.Signup, bool) (*models.User, bool, error)
 	Update(*models.User) (*models.User, error)
+	SetAdmin(*models.User, bool) (*models.User, error)
 	Delete(*models.User) error
 	ChangeUserId(*models.User, string) (*models.User, error)
 	ResetApiKey(*models.User) (*models.User, error)
