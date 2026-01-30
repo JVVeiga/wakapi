@@ -36,6 +36,9 @@ Montadas em `rootRouter` com `SecurityMiddleware` (headers CSP, X-Frame-Options)
 | GET | `/imprint` | ImprintHandler.GetImprint | Não | Impressum legal |
 | GET | `/setup` | SetupHandler.GetIndex | Opcional | Onboarding |
 | GET | `/unsubscribe` | MiscHandler.GetUnsubscribe | Não | Desinscrever de e-mails |
+| GET | `/admin` | AdminHandler.GetDashboard | Sim (admin) | Dashboard administrativo |
+| GET | `/admin/users/{id}` | AdminHandler.GetUserDetail | Sim (admin) | Detalhes de um usuário |
+| POST | `/admin/users/{id}` | AdminHandler.PostUserAction | Sim (admin) | Ações admin (promover/demover) |
 
 ## API REST
 
