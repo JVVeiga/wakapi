@@ -11,61 +11,61 @@
 <main class="mt-10 grow flex justify-center w-full">
     <div class="flex flex-col grow mt-10 max-available">
         <div class="flex items-center mb-10">
-            <a href="admin" class="text-primary hover:underline mr-4">&larr; Back</a>
-            <h1 class="h1">User: {{ .TargetUser.ID }}</h1>
+            <a href="admin" class="text-primary hover:underline mr-4">&larr; {{ .T "common.back" }}</a>
+            <h1 class="h1">{{ .T "admin.user_detail" }} {{ .TargetUser.ID }}</h1>
             {{ if .TargetUser.IsAdmin }}
-            <span class="ml-3 text-sm font-semibold text-accent">Admin</span>
+            <span class="ml-3 text-sm font-semibold text-accent">{{ .T "admin.admin_badge" }}</span>
             {{ end }}
         </div>
 
         <div class="w-full mb-10 grid grid-cols-2 md:grid-cols-4 gap-2">
             <div class="flex flex-col w-full p-4 pt-2 rounded-md text-foreground bg-card leading-none border-2 border-accent">
-                <span class="text-xs text-muted font-semibold">Heartbeats</span>
+                <span class="text-xs text-muted font-semibold">{{ .T "admin.heartbeats" }}</span>
                 <span class="font-semibold text-xl truncate mt-1">{{ if .TotalTime }}{{ .TotalTime }}{{ else }}0{{ end }}</span>
             </div>
             <div class="flex flex-col w-full p-4 pt-2 rounded-md text-foreground bg-card leading-none border-2 border-accent">
-                <span class="text-xs text-muted font-semibold">Last Activity</span>
+                <span class="text-xs text-muted font-semibold">{{ .T "admin.last_activity" }}</span>
                 <span class="font-semibold text-xl truncate mt-1">{{ if .LastActivity }}{{ .LastActivity }}{{ else }}-{{ end }}</span>
             </div>
             <div class="flex flex-col w-full p-4 pt-2 rounded-md text-foreground bg-card leading-none border-2 border-accent">
-                <span class="text-xs text-muted font-semibold">Auth Type</span>
+                <span class="text-xs text-muted font-semibold">{{ .T "admin.auth_type" }}</span>
                 <span class="font-semibold text-xl truncate mt-1">{{ .TargetUser.AuthType }}</span>
             </div>
             <div class="flex flex-col w-full p-4 pt-2 rounded-md text-foreground bg-card leading-none border-2 border-accent">
-                <span class="text-xs text-muted font-semibold">Leaderboard</span>
-                <span class="font-semibold text-xl truncate mt-1">{{ if .TargetUser.PublicLeaderboard }}Yes{{ else }}No{{ end }}</span>
+                <span class="text-xs text-muted font-semibold">{{ .T "admin.leaderboard" }}</span>
+                <span class="font-semibold text-xl truncate mt-1">{{ if .TargetUser.PublicLeaderboard }}{{ .T "common.yes" }}{{ else }}{{ .T "common.no" }}{{ end }}</span>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
             <div class="bg-card rounded-md p-4 px-6 border-2 border-muted">
-                <h2 class="font-semibold text-foreground mb-4">Profile</h2>
+                <h2 class="font-semibold text-foreground mb-4">{{ .T "admin.profile" }}</h2>
                 <dl class="space-y-3 text-sm">
                     <div class="flex justify-between">
-                        <dt class="text-muted">Email</dt>
+                        <dt class="text-muted">{{ .T "admin.email" }}</dt>
                         <dd class="text-foreground">{{ if .TargetUser.Email }}{{ .TargetUser.Email }}{{ else }}-{{ end }}</dd>
                     </div>
                     <div class="flex justify-between">
-                        <dt class="text-muted">Created</dt>
+                        <dt class="text-muted">{{ .T "admin.created" }}</dt>
                         <dd class="text-foreground">{{ date .TargetUser.CreatedAt.T }}</dd>
                     </div>
                     <div class="flex justify-between">
-                        <dt class="text-muted">Last Login</dt>
+                        <dt class="text-muted">{{ .T "admin.last_login" }}</dt>
                         <dd class="text-foreground">{{ if not .TargetUser.LastLoggedInAt.T.IsZero }}{{ datetime .TargetUser.LastLoggedInAt.T }}{{ else }}-{{ end }}</dd>
                     </div>
                 </dl>
             </div>
 
             <div class="bg-card rounded-md p-4 px-6 border-2 border-muted">
-                <h2 class="font-semibold text-foreground mb-4">API Keys</h2>
+                <h2 class="font-semibold text-foreground mb-4">{{ .T "settings.api_keys" }}</h2>
                 <div class="space-y-3">
                     <div class="flex justify-between text-sm">
-                        <span class="text-muted">Main Key</span>
+                        <span class="text-muted">{{ .T "admin.main_key" }}</span>
                         <span class="text-foreground font-mono">{{ if .MaskedMainKey }}{{ .MaskedMainKey }}{{ else }}-{{ end }}</span>
                     </div>
                     {{ range .ApiKeys }}
                     <div class="flex justify-between text-sm">
-                        <span class="text-muted">{{ if .Label }}{{ .Label }}{{ else }}Unnamed{{ end }}{{ if .ReadOnly }} (read-only){{ end }}</span>
+                        <span class="text-muted">{{ if .Label }}{{ .Label }}{{ else }}{{ $.T "admin.unnamed" }}{{ end }}{{ if .ReadOnly }} ({{ $.T "admin.read_only_badge" }}){{ end }}</span>
                         <span class="text-foreground font-mono">{{ .ApiKey }}</span>
                     </div>
                     {{ end }}
@@ -74,7 +74,7 @@
         </div>
 
         <div class="bg-card rounded-md p-4 px-6 border-2 border-muted mb-10">
-            <h2 class="font-semibold text-foreground mb-4">Teams</h2>
+            <h2 class="font-semibold text-foreground mb-4">{{ .T "admin.teams" }}</h2>
             {{ if .UserTeams }}
             <div class="space-y-2">
                 {{ range .UserTeams }}
@@ -88,25 +88,25 @@
                 {{ end }}
             </div>
             {{ else }}
-            <p class="text-sm text-muted">Not a member of any team</p>
+            <p class="text-sm text-muted">{{ .T "admin.not_member" }}</p>
             {{ end }}
         </div>
 
         <div class="bg-card rounded-md p-4 px-6 border-2 border-muted">
-            <h2 class="font-semibold text-foreground mb-4">Actions</h2>
+            <h2 class="font-semibold text-foreground mb-4">{{ .T "common.actions" }}</h2>
             <div class="flex gap-3">
                 {{ if .TargetUser.IsAdmin }}
                 <form action="admin/users/{{ .TargetUser.ID }}" method="post" class="inline">
                     <input type="hidden" name="action" value="demote_admin">
                     <button type="submit" class="btn-default text-sm" onclick="return confirm('Remove admin privileges from {{ .TargetUser.ID }}?')">
-                        Demote from Admin
+                        {{ .T "admin.demote_admin" }}
                     </button>
                 </form>
                 {{ else }}
                 <form action="admin/users/{{ .TargetUser.ID }}" method="post" class="inline">
                     <input type="hidden" name="action" value="promote_admin">
                     <button type="submit" class="btn-primary text-sm" onclick="return confirm('Promote {{ .TargetUser.ID }} to admin?')">
-                        Promote to Admin
+                        {{ .T "admin.promote_admin" }}
                     </button>
                 </form>
                 {{ end }}

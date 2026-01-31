@@ -12,42 +12,42 @@
     <div class="flex flex-col grow mt-10 max-available">
         <div class="flex items-center justify-between mb-8">
             <div class="flex items-center">
-                <a href="admin" class="text-primary hover:underline mr-4">&larr; Back</a>
-                <h1 class="h1">Team Management</h1>
+                <a href="admin" class="text-primary hover:underline mr-4">&larr; {{ .T "common.back" }}</a>
+                <h1 class="h1">{{ .T "admin.team_management" }}</h1>
             </div>
             <button onclick="document.getElementById('createTeamForm').classList.toggle('hidden')" class="btn-primary text-sm">
-                Create Team
+                {{ .T "admin.create_team" }}
             </button>
         </div>
 
         <div id="createTeamForm" class="hidden bg-card rounded-md p-4 px-6 border-2 border-accent mb-8">
-            <h2 class="font-semibold text-foreground mb-4">Create New Team</h2>
+            <h2 class="font-semibold text-foreground mb-4">{{ .T "admin.create_new_team" }}</h2>
             <form action="admin/teams" method="post" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-muted mb-1">Team Name</label>
+                    <label class="block text-sm font-medium text-muted mb-1">{{ .T "admin.team_name" }}</label>
                     <input type="text" name="name" required class="w-full px-3 py-2 border border-muted rounded-md bg-background text-foreground text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-muted mb-1">Description</label>
+                    <label class="block text-sm font-medium text-muted mb-1">{{ .T "common.description" }}</label>
                     <textarea name="description" rows="3" class="w-full px-3 py-2 border border-muted rounded-md bg-background text-foreground text-sm"></textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-muted mb-1">Owner</label>
+                    <label class="block text-sm font-medium text-muted mb-1">{{ .T "common.owner" }}</label>
                     <select name="owner_id" required class="w-full px-3 py-2 border border-muted rounded-md bg-background text-foreground text-sm">
-                        <option value="">Select a user...</option>
+                        <option value="">{{ .T "admin.select_user" }}</option>
                         {{ range .Users }}
                         <option value="{{ .ID }}">{{ .ID }}{{ if .Email }} ({{ .Email }}){{ end }}</option>
                         {{ end }}
                     </select>
                 </div>
                 <div class="flex gap-2">
-                    <button type="submit" class="btn-primary text-sm">Create</button>
-                    <button type="button" onclick="document.getElementById('createTeamForm').classList.add('hidden')" class="btn-default text-sm">Cancel</button>
+                    <button type="submit" class="btn-primary text-sm">{{ .T "common.create" }}</button>
+                    <button type="button" onclick="document.getElementById('createTeamForm').classList.add('hidden')" class="btn-default text-sm">{{ .T "common.cancel" }}</button>
                 </div>
             </form>
         </div>
 
-        <h2 class="font-semibold text-lg text-foreground mb-4">All Teams ({{ len .Teams }})</h2>
+        <h2 class="font-semibold text-lg text-foreground mb-4">{{ printf (.T "admin.all_teams") (len .Teams) }}</h2>
 
         {{ if .Teams }}
         <ol class="space-y-3 mb-8">
@@ -56,10 +56,10 @@
                 <a href="admin/teams/{{ .ID }}" class="px-4 py-3 rounded-md border-2 border-muted flex items-center justify-between hover:bg-focused transition-colors">
                     <div class="flex items-center space-x-4 min-w-0">
                         <span class="text-foreground font-semibold truncate">{{ .Name }}</span>
-                        <span class="text-sm text-muted flex-shrink-0">Owner: {{ .OwnerID }}</span>
+                        <span class="text-sm text-muted flex-shrink-0">{{ $.T "admin.owner_label" }} {{ .OwnerID }}</span>
                     </div>
                     <div class="flex items-center space-x-6 text-sm flex-shrink-0 ml-4">
-                        <span class="text-muted">{{ index $.TeamMemberCounts .ID }} members</span>
+                        <span class="text-muted">{{ index $.TeamMemberCounts .ID }} {{ $.T "common.members" }}</span>
                         <span class="text-muted hidden md:inline">{{ date .CreatedAt.T }}</span>
                         <span class="text-secondary">&rarr;</span>
                     </div>
@@ -69,7 +69,7 @@
         </ol>
         {{ else }}
         <div class="text-center py-12 text-muted">
-            <p>No teams yet. Create one to get started.</p>
+            <p>{{ .T "admin.no_teams" }}</p>
         </div>
         {{ end }}
     </div>

@@ -10,23 +10,23 @@
 
 <main class="mt-10 grow flex justify-center w-full">
     <div class="flex flex-col grow mt-10 max-available">
-        <h1 class="h1 mb-8">Admin Dashboard</h1>
+        <h1 class="h1 mb-8">{{ .T "admin.dashboard" }}</h1>
 
         <div class="w-full mb-10 grid grid-cols-2 md:grid-cols-4 gap-2">
             <div class="flex flex-col w-full p-4 pt-2 rounded-md text-foreground bg-card leading-none border-2 border-accent">
-                <span class="text-xs text-muted font-semibold">Total Users</span>
+                <span class="text-xs text-muted font-semibold">{{ .T "admin.total_users" }}</span>
                 <span class="font-semibold text-xl truncate mt-1">{{ .TotalUsers }}</span>
             </div>
             <div class="flex flex-col w-full p-4 pt-2 rounded-md text-foreground bg-card leading-none border-2 border-accent">
-                <span class="text-xs text-muted font-semibold">Active Users</span>
+                <span class="text-xs text-muted font-semibold">{{ .T "admin.active_users" }}</span>
                 <span class="font-semibold text-xl truncate mt-1">{{ .ActiveUsers }}</span>
             </div>
             <div class="flex flex-col w-full p-4 pt-2 rounded-md text-foreground bg-card leading-none border-2 border-accent">
-                <span class="text-xs text-muted font-semibold">Online Now</span>
+                <span class="text-xs text-muted font-semibold">{{ .T "admin.online_now" }}</span>
                 <span class="font-semibold text-xl truncate mt-1">{{ .OnlineUsers }}</span>
             </div>
             <div class="flex flex-col w-full p-4 pt-2 rounded-md text-foreground bg-card leading-none border-2 border-accent">
-                <span class="text-xs text-muted font-semibold">Total Heartbeats</span>
+                <span class="text-xs text-muted font-semibold">{{ .T "admin.total_heartbeats" }}</span>
                 <span class="font-semibold text-xl truncate mt-1">{{ .TotalHeartbeats }}</span>
             </div>
         </div>
@@ -35,15 +35,15 @@
             <a href="admin/teams" class="px-4 py-3 rounded-md border-2 border-accent flex items-center justify-between hover:bg-focused transition-colors">
                 <div class="flex items-center space-x-3">
                     <span class="iconify inline text-xl text-accent" data-icon="bi:people-fill"></span>
-                    <span class="text-foreground font-semibold">Manage Teams</span>
+                    <span class="text-foreground font-semibold">{{ .T "admin.manage_teams" }}</span>
                 </div>
                 <span class="text-secondary">&rarr;</span>
             </a>
         </div>
 
         <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-lg text-foreground">Users</h2>
-            <span class="text-sm text-muted">Page {{ .Page }} of {{ .TotalPages }}</span>
+            <h2 class="font-semibold text-lg text-foreground">{{ .T "admin.users" }}</h2>
+            <span class="text-sm text-muted">{{ printf (.T "admin.page_of") .Page .TotalPages }}</span>
         </div>
         <ol class="space-y-3 mb-4">
             {{ range .Users }}
@@ -51,11 +51,11 @@
                 <a href="admin/users/{{ .ID }}" class="px-4 py-3 rounded-md border-2 {{ if .IsAdmin }}border-accent bg-focused{{ else }}border-muted{{ end }} flex items-center justify-between hover:bg-focused transition-colors">
                     <div class="flex items-center space-x-4 min-w-0">
                         <span class="text-foreground font-semibold font-mono truncate">{{ .ID }}</span>
-                        {{ if .IsAdmin }}<span class="text-sm font-semibold text-accent flex-shrink-0">Admin</span>{{ end }}
+                        {{ if .IsAdmin }}<span class="text-sm font-semibold text-accent flex-shrink-0">{{ $.T "admin.admin_badge" }}</span>{{ end }}
                     </div>
                     <div class="flex items-center space-x-6 text-sm flex-shrink-0 ml-4">
                         <span class="text-muted hidden sm:inline">{{ if .Email }}{{ .Email }}{{ else }}-{{ end }}</span>
-                        <span class="text-muted hidden md:inline">{{ if not .LastLoggedInAt.T.IsZero }}{{ date .LastLoggedInAt.T }}{{ else }}Never{{ end }}</span>
+                        <span class="text-muted hidden md:inline">{{ if not .LastLoggedInAt.T.IsZero }}{{ date .LastLoggedInAt.T }}{{ else }}{{ $.T "common.never" }}{{ end }}</span>
                         <span class="text-secondary">&rarr;</span>
                     </div>
                 </a>
@@ -65,10 +65,10 @@
         {{ if gt .TotalPages 1 }}
         <div class="flex justify-center gap-2 mb-8">
             {{ if gt .Page 1 }}
-            <a href="admin?page={{ add .Page -1 }}" class="btn-default text-sm">&larr; Previous</a>
+            <a href="admin?page={{ add .Page -1 }}" class="btn-default text-sm">&larr; {{ .T "common.previous" }}</a>
             {{ end }}
             {{ if lt .Page .TotalPages }}
-            <a href="admin?page={{ add .Page 1 }}" class="btn-default text-sm">Next &rarr;</a>
+            <a href="admin?page={{ add .Page 1 }}" class="btn-default text-sm">{{ .T "common.next" }} &rarr;</a>
             {{ end }}
         </div>
         {{ end }}

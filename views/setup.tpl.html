@@ -16,9 +16,9 @@
 
 <main class="mt-10 grow flex justify-center w-full lg:w-3/4 self-center" id="setup-instructions-page">
     <div class="flex flex-col grow mt-10 max-available text-secondary">
-        <h1 class="h1 inline-block text-center">Setup Instructions</h1>
+        <h1 class="h1 inline-block text-center">{{ .T "setup.title" }}</h1>
         <h2 class="h2 inline-block text-center text-xl mt-2">
-            Get started tracking your coding time with Wakapi in just a few steps<br>– simple and easy!
+            {{ .T "setup.subtitle" }}
             <span class="iconify inline ml-1" data-icon="fxemoji:rocket"></span>
         </h2>
 
@@ -28,9 +28,9 @@
                     <h3 class="flex justify-center items-center text-white text-xl font-semibold bg-accent rounded-full w-[50px] h-[50px]">1</h3>
                 </div>
                 <div>
-                    <h4 class="text-lg font-semibold text-white">Install the WakaTime plugin</h4>
-                    <p class="mb-3">First step is to download and install the WakaTime plugin into your editor or IDE. Available for Visual Studio Code, PyCharm, IntelliJ, Neovim and many more – even Chrome or Firefox are supported.</p>
-                    <a href="https://wakatime.com/plugins" target="_blank" rel="noreferrer noopener" class="btn btn-primary">Download Plugin <span class="iconify inline ml-1" data-icon="ic:round-download"></span></a>
+                    <h4 class="text-lg font-semibold text-white">{{ .T "setup.step1_title" }}</h4>
+                    <p class="mb-3">{{ .T "setup.step1_desc" }}</p>
+                    <a href="https://wakatime.com/plugins" target="_blank" rel="noreferrer noopener" class="btn btn-primary">{{ .T "setup.download_plugin" }} <span class="iconify inline ml-1" data-icon="ic:round-download"></span></a>
                 </div>
             </div>
 
@@ -39,13 +39,13 @@
                     <h3 class="flex justify-center items-center text-white text-xl font-semibold bg-accent rounded-full w-[50px] h-[50px]">2</h3>
                 </div>
                 <div class="flex flex-col gap-y-2">
-                    <h4 class="text-lg font-semibold text-white">Update your config</h4>
-                    <p class="">After having installed one or more IDE plugins, you will have to adapt the WakaTime config file in your home directory.</p>
+                    <h4 class="text-lg font-semibold text-white">{{ .T "setup.step2_title" }}</h4>
+                    <p class="">{{ .T "setup.step2_desc" }}</p>
                     <p class="my-1">
-                        <span class="font-semibold">On Linux / macOS: <span class="font-mono text-sm font-normal ml-1">~/.wakatime.cfg</span></span><br>
-                        <span class="font-semibold">On Windows: <span class="font-mono text-sm font-normal ml-1">%USERPROFILE%\.wakatime.cfg</span></span>
+                        <span class="font-semibold">{{ .T "setup.linux_macos" }} <span class="font-mono text-sm font-normal ml-1">~/.wakatime.cfg</span></span><br>
+                        <span class="font-semibold">{{ .T "setup.windows" }} <span class="font-mono text-sm font-normal ml-1">%USERPROFILE%\.wakatime.cfg</span></span>
                     </p>
-                    <p>Open the file with your favorite editor and adapt the API URL and -key like this:</p>
+                    <p>{{ .T "setup.step2_edit" }}</p>
                     <div class="bg-card text-left rounded-md py-4 px-8 text-xs font-mono shadow-md">
                         [settings]<br>
                         {{ if .User }}
@@ -64,9 +64,9 @@
                     <h3 class="flex justify-center items-center text-white text-xl font-semibold bg-accent rounded-full w-[50px] h-[50px]">3</h3>
                 </div>
                 <div>
-                    <h4 class="text-lg font-semibold text-white">Start coding!</h4>
-                    <p class="mb-3">You're done! Restart your editor or IDE and jump straight into coding. After a short while, you will see your coding activity appear on the dashboard, providing detailed project insights and statistics about your favorite editor, operating system, programming language and more.</p>
-                    <a href="summary" class="btn btn-primary">Go to Dashboard <span class="iconify inline ml-1" data-icon="ic:round-dashboard"></span></a>
+                    <h4 class="text-lg font-semibold text-white">{{ .T "setup.step3_title" }}</h4>
+                    <p class="mb-3">{{ .T "setup.step3_desc" }}</p>
+                    <a href="summary" class="btn btn-primary">{{ .T "setup.go_dashboard" }} <span class="iconify inline ml-1" data-icon="ic:round-dashboard"></span></a>
                 </div>
             </div>
         </div>

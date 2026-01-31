@@ -11,28 +11,28 @@
 <main class="mt-10 grow flex justify-center w-full">
     <div class="flex flex-col grow mt-10 max-available">
         <div class="flex items-center mb-10">
-            <a href="admin/teams" class="text-primary hover:underline mr-4">&larr; Back</a>
+            <a href="admin/teams" class="text-primary hover:underline mr-4">&larr; {{ .T "common.back" }}</a>
             <h1 class="h1">Team: {{ .Team.Name }}</h1>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
             <div class="bg-card rounded-md p-4 px-6 border-2 border-muted">
-                <h2 class="font-semibold text-foreground mb-4">Team Information</h2>
+                <h2 class="font-semibold text-foreground mb-4">{{ .T "admin.team_info" }}</h2>
                 <dl class="space-y-3 text-sm">
                     <div class="flex justify-between">
-                        <dt class="text-muted">Team ID</dt>
+                        <dt class="text-muted">{{ .T "admin.team_id" }}</dt>
                         <dd class="text-foreground font-mono text-xs">{{ .Team.ID }}</dd>
                     </div>
                     <div class="flex justify-between">
-                        <dt class="text-muted">Owner</dt>
+                        <dt class="text-muted">{{ .T "common.owner" }}</dt>
                         <dd class="text-foreground">{{ .Team.OwnerID }}</dd>
                     </div>
                     <div class="flex justify-between">
-                        <dt class="text-muted">Created</dt>
+                        <dt class="text-muted">{{ .T "admin.created" }}</dt>
                         <dd class="text-foreground">{{ date .Team.CreatedAt.T }}</dd>
                     </div>
                     <div class="flex justify-between">
-                        <dt class="text-muted">Members</dt>
+                        <dt class="text-muted">{{ .T "common.members" }}</dt>
                         <dd class="text-foreground">{{ len .Members }}</dd>
                     </div>
                 </dl>
@@ -44,27 +44,27 @@
             </div>
 
             <div class="bg-card rounded-md p-4 px-6 border-2 border-muted">
-                <h2 class="font-semibold text-foreground mb-4">Edit Team</h2>
+                <h2 class="font-semibold text-foreground mb-4">{{ .T "admin.edit_team" }}</h2>
                 <form action="admin/teams/{{ .Team.ID }}" method="post" class="space-y-4">
                     <input type="hidden" name="action" value="update">
                     <div>
-                        <label class="block text-sm font-medium text-muted mb-1">Name</label>
+                        <label class="block text-sm font-medium text-muted mb-1">{{ .T "common.name" }}</label>
                         <input type="text" name="name" value="{{ .Team.Name }}" required class="w-full px-3 py-2 border border-muted rounded-md bg-background text-foreground text-sm">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-muted mb-1">Description</label>
+                        <label class="block text-sm font-medium text-muted mb-1">{{ .T "common.description" }}</label>
                         <textarea name="description" rows="3" class="w-full px-3 py-2 border border-muted rounded-md bg-background text-foreground text-sm">{{ .Team.Description }}</textarea>
                     </div>
-                    <button type="submit" class="btn-primary text-sm">Update Team</button>
+                    <button type="submit" class="btn-primary text-sm">{{ .T "admin.update_team" }}</button>
                 </form>
             </div>
         </div>
 
         <div class="bg-card rounded-md p-4 px-6 border-2 border-muted mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="font-semibold text-foreground">Team Members</h2>
+                <h2 class="font-semibold text-foreground">{{ .T "admin.team_members" }}</h2>
                 <button onclick="document.getElementById('addMemberForm').classList.toggle('hidden')" class="btn-primary text-sm">
-                    Add Member
+                    {{ .T "admin.add_member" }}
                 </button>
             </div>
 
@@ -72,17 +72,17 @@
                 <form action="admin/teams/{{ .Team.ID }}/members" method="post" class="flex gap-3 items-end flex-wrap">
                     <input type="hidden" name="action" value="add">
                     <div class="flex-grow">
-                        <label class="block text-sm font-medium text-muted mb-1">User</label>
+                        <label class="block text-sm font-medium text-muted mb-1">{{ .T "admin.user" }}</label>
                         <select name="user_id" required class="w-full px-3 py-2 border border-muted rounded-md bg-background text-foreground text-sm">
-                            <option value="">Select a user...</option>
+                            <option value="">{{ .T "admin.select_user" }}</option>
                             {{ range .AllUsers }}
                             <option value="{{ .ID }}">{{ .ID }}{{ if .Email }} ({{ .Email }}){{ end }}</option>
                             {{ end }}
                         </select>
                     </div>
                     <input type="hidden" name="role" value="member">
-                    <button type="submit" class="btn-primary text-sm">Add</button>
-                    <button type="button" onclick="document.getElementById('addMemberForm').classList.add('hidden')" class="btn-default text-sm">Cancel</button>
+                    <button type="submit" class="btn-primary text-sm">{{ .T "common.add" }}</button>
+                    <button type="button" onclick="document.getElementById('addMemberForm').classList.add('hidden')" class="btn-default text-sm">{{ .T "common.cancel" }}</button>
                 </form>
             </div>
 
@@ -95,7 +95,7 @@
                         {{ if eq .Role "owner" }}
                         <span class="text-xs font-semibold text-accent">owner</span>
                         {{ else }}
-                        <span class="text-xs text-muted">member</span>
+                        <span class="text-xs text-muted">{{ $.T "admin.member" }}</span>
                         {{ end }}
                     </div>
                     <div class="flex items-center space-x-3">
@@ -104,7 +104,7 @@
                             <input type="hidden" name="action" value="remove">
                             <input type="hidden" name="user_id" value="{{ .UserID }}">
                             <button type="submit" class="text-sm text-red-500 hover:text-red-700" onclick="return confirm('Remove {{ .UserID }} from team?')">
-                                Remove
+                                {{ $.T "common.remove" }}
                             </button>
                         </form>
                         {{ end }}
@@ -113,16 +113,16 @@
                 {{ end }}
             </div>
             {{ else }}
-            <p class="text-center py-6 text-muted text-sm">No members yet</p>
+            <p class="text-center py-6 text-muted text-sm">{{ .T "admin.no_members" }}</p>
             {{ end }}
         </div>
 
         <div class="bg-card rounded-md p-4 px-6 border-2 border-red-500">
-            <h2 class="font-semibold text-red-500 mb-4">Danger Zone</h2>
+            <h2 class="font-semibold text-red-500 mb-4">{{ .T "settings.danger_zone" }}</h2>
             <form action="admin/teams/{{ .Team.ID }}" method="post" class="inline">
                 <input type="hidden" name="action" value="delete">
                 <button type="submit" class="btn-default text-sm text-red-500 border-red-500 hover:bg-red-500 hover:text-white" onclick="return confirm('Delete team {{ .Team.Name }}? This will remove all members. This action cannot be undone.')">
-                    Delete Team
+                    {{ .T "admin.delete_team" }}
                 </button>
             </form>
         </div>

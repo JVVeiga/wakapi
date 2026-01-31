@@ -1,3 +1,7 @@
 <header class="flex justify-between mb-10">
     {{ template "logo.tpl.html" . }}
+    <a href="lang?lang={{ if eq .Language "pt-BR" }}en{{ else }}pt-BR{{ end }}" class="flex items-center space-x-1 p-1 rounded hover:bg-primary-hover text-sm" title="{{ if eq .Language "pt-BR" }}English{{ else }}Português{{ end }}">
+        <span class="iconify inline" data-icon="mdi:translate" style="width: 18px; height: 18px"></span>
+        <span>{{ if eq .Language "pt-BR" }}EN{{ else }}PT{{ end }}</span>
+    </a>
 </header>

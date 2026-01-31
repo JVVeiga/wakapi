@@ -16,6 +16,7 @@ import (
 	routeutils "github.com/muety/wakapi/routes/utils"
 	"github.com/muety/wakapi/services"
 	"github.com/muety/wakapi/utils"
+	i18n "github.com/muety/wakapi/views/i18n"
 )
 
 const (
@@ -94,7 +95,7 @@ func (h *TeamsHandler) GetIndex(w http.ResponseWriter, r *http.Request) {
 
 	vm := &view.TeamsViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
 			User:            user,
 		},
 		Teams:            teams,
@@ -119,9 +120,11 @@ func (h *TeamsHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	lang := routeutils.ResolveLanguage(r, user)
+
 	team, err := h.teamSrvc.GetByID(teamID)
 	if err != nil {
-		routeutils.SetError(r, w, "team not found")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.team_not_found"))
 		http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
 		return
 	}
@@ -130,12 +133,12 @@ func (h *TeamsHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 		isMember, err := h.teamSrvc.IsTeamMember(teamID, user.ID)
 		if err != nil {
 			conf.Log().Request(r).Error("failed to check team membership", "error", err, "team", teamID, "user", user.ID)
-			routeutils.SetError(r, w, "internal error")
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.internal_error"))
 			http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
 			return
 		}
 		if !isMember {
-			routeutils.SetError(r, w, "you are not a member of this team")
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_your_team"))
 			http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
 			return
 		}
@@ -198,7 +201,7 @@ func (h *TeamsHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 
 	vm := &view.TeamDetailViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
 			User:            user,
 		},
 		Team:            team,
@@ -230,10 +233,12 @@ func (h *TeamsHandler) GetMemberSummary(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	lang := routeutils.ResolveLanguage(r, user)
+
 	// Verify team exists
 	team, err := h.teamSrvc.GetByID(teamID)
 	if err != nil {
-		routeutils.SetError(r, w, "team not found")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.team_not_found"))
 		http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
 		return
 	}
@@ -241,7 +246,7 @@ func (h *TeamsHandler) GetMemberSummary(w http.ResponseWriter, r *http.Request) 
 	// Authorization: must be admin or team owner
 	isOwner, _ := h.teamSrvc.IsTeamOwner(teamID, user.ID)
 	if !user.IsAdmin && !isOwner {
-		routeutils.SetError(r, w, "unauthorized: only team owners can view member dashboards")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.unauthorized_member_dashboard"))
 		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
 		return
 	}
@@ -250,12 +255,12 @@ func (h *TeamsHandler) GetMemberSummary(w http.ResponseWriter, r *http.Request) 
 	isMember, err := h.teamSrvc.IsTeamMember(teamID, memberUserID)
 	if err != nil {
 		conf.Log().Request(r).Error("failed to check team membership", "error", err, "team", teamID, "user", memberUserID)
-		routeutils.SetError(r, w, "internal error")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.internal_error"))
 		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
 		return
 	}
 	if !isMember {
-		routeutils.SetError(r, w, "user is not a member of this team")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_team_member"))
 		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
 		return
 	}
@@ -264,7 +269,7 @@ func (h *TeamsHandler) GetMemberSummary(w http.ResponseWriter, r *http.Request) 
 	memberUser, err := h.userSrvc.GetUserById(memberUserID)
 	if err != nil {
 		conf.Log().Request(r).Error("failed to get team member user", "error", err, "user", memberUserID)
-		routeutils.SetError(r, w, "user not found")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.user_not_found"))
 		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
 		return
 	}
@@ -340,7 +345,7 @@ func (h *TeamsHandler) GetMemberSummary(w http.ResponseWriter, r *http.Request) 
 
 	vm := view.SummaryViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
 			User:            user,
 		},
 		Summary:             summary,
@@ -369,7 +374,7 @@ func (h *TeamsHandler) buildMemberSummaryViewModel(r *http.Request, w http.Respo
 	return routeutils.WithSessionMessages(&view.SummaryViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
 			User:            user,
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
 		},
 		TeamContext: &view.TeamMemberViewContext{
 			TeamID:   team.ID,

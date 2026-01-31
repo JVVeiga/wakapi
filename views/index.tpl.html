@@ -19,24 +19,21 @@
         </div>
         {{ end }}
 
-        <h1 class="text-8xl font-semibold antialiased text-center mb-10 leading-snug">Keep Track of<br><span
-                class="text-accent">Your</span> Coding Time</h1>
-        <p class="text-center text-secondary text-xl my-2">Wakapi is an open-source tool that helps you keep track of the
-            time you have spent coding on different projects in different programming languages and more.<br>Ideal for
-            statistics freaks and anyone else.</p>
+        <h1 class="text-8xl font-semibold antialiased text-center mb-10 leading-snug">{{ .T "index.title" }}</h1>
+        <p class="text-center text-secondary text-xl my-2">{{ .T "index.subtitle" }}</p>
 
         <div class="flex justify-center mt-8 mb-4 space-x-2">
             <a href="setup">
                 <button type="button"
-                        class="btn-primary"><span class="iconify inline" data-icon="ion:rocket"></span> Let's Go!
+                        class="btn-primary"><span class="iconify inline" data-icon="ion:rocket"></span> {{ .T "index.cta_login" }}
                 </button>
             </a>
             <a href="https://github.com/muety/wakapi#%EF%B8%8F-how-to-use" target="_blank" rel="noopener noreferrer">
-                <button type="button" class="btn-default"><span class="iconify inline" data-icon="heroicons-solid:server"></span> Get Your Own
+                <button type="button" class="btn-default"><span class="iconify inline" data-icon="heroicons-solid:server"></span> {{ .T "index.cta_selfhost" }}
                 </button>
             </a>
             <a href="https://github.com/sponsors/muety" target="_blank" rel="noopener noreferrer">
-                <button type="button" class="btn-default"><span class="iconify inline" data-icon="bx:bxs-heart"></span> Support Us
+                <button type="button" class="btn-default"><span class="iconify inline" data-icon="bx:bxs-heart"></span> {{ .T "index.cta_support" }}
                 </button>
             </a>
             <a href="https://github.com/muety/wakapi" target="_blank" rel="noopener noreferrer">
@@ -60,7 +57,7 @@
 
         <div id="online-indicator" class="text-center text-secondary text-md font-semibold flex justify-center items-center gap-2">
             <div class="live-indicator"></div>
-            <span>{{ .CurrentlyOnline }} currently active users</span>
+            <span>{{ .CurrentlyOnline }} {{ .T "index.active_users" }}</span>
         </div>
 
         <div class="flex justify-center my-8">
@@ -68,21 +65,21 @@
         </div>
 
         <div class="flex flex-col items-center mt-10">
-            <h2 class="font-semibold text-3xl text-white m-0">Features</h2>
+            <h2 class="font-semibold text-3xl text-white m-0">{{ .T "index.features" }}</h2>
             <div class="mt-4 text-lg text-secondary">
                 <ul>
-                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; 100 % free and open-source</li>
-                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; Built by developers for developers</li>
-                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; Fancy statistics and plots</li>
-                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; Public leaderboards</li>
-                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; Cool badges for readmes</li>
-                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; Weekly e-mail reports</li>
-                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; Intuitive REST API</li>
-                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; Compatible with <a href="https://wakatime.com" target="_blank" rel="noopener noreferrer" class="hover:text-foreground">Wakatime</a></li>
-                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; <a href="https://prometheus.io" target="_blank" rel="noopener noreferrer" class="hover:text-foreground">Prometheus</a> metrics</li>
-                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; Lightning fast</li>
-                    <li title="Wakapi.dev is hosted in Germany, none of your data will leave the EU"><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; GDPR-compliant</li>
-                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; Self-hosted</li>
+                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_opensource" }}</li>
+                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_developers" }}</li>
+                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_stats" }}</li>
+                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_leaderboards" }}</li>
+                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_badges" }}</li>
+                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_reports" }}</li>
+                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_api" }}</li>
+                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_wakatime" }}</li>
+                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_prometheus" }}</li>
+                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_fast" }}</li>
+                    <li title="Wakapi.dev is hosted in Germany, none of your data will leave the EU"><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_gdpr" }}</li>
+                    <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_selfhosted" }}</li>
                 </ul>
             </div>
         </div>

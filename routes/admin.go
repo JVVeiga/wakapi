@@ -14,6 +14,7 @@ import (
 	"github.com/muety/wakapi/models/view"
 	routeutils "github.com/muety/wakapi/routes/utils"
 	"github.com/muety/wakapi/services"
+	i18n "github.com/muety/wakapi/views/i18n"
 )
 
 type AdminHandler struct {
@@ -99,7 +100,7 @@ func (h *AdminHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 
 	vm := &view.AdminDashboardViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
 			User:            user,
 		},
 		TotalUsers:      totalUsers,
@@ -145,7 +146,7 @@ func (h *AdminHandler) GetUserDetail(w http.ResponseWriter, r *http.Request) {
 
 	vm := &view.AdminUserDetailViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, adminUser),
 			User:            adminUser,
 		},
 		TargetUser:    targetUser,
@@ -163,12 +164,13 @@ func (h *AdminHandler) GetUserDetail(w http.ResponseWriter, r *http.Request) {
 
 func (h *AdminHandler) PostUserAction(w http.ResponseWriter, r *http.Request) {
 	adminUser := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, adminUser)
 	userId := chi.URLParam(r, "id")
 	action := r.FormValue("action")
 
 	targetUser, err := h.userSrvc.GetUserById(userId)
 	if err != nil {
-		routeutils.SetError(r, w, "user not found")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.user_not_found"))
 		http.Redirect(w, r, fmt.Sprintf("%s/admin", h.config.Server.BasePath), http.StatusFound)
 		return
 	}
@@ -176,18 +178,18 @@ func (h *AdminHandler) PostUserAction(w http.ResponseWriter, r *http.Request) {
 	switch strings.ToLower(action) {
 	case "promote_admin":
 		if _, err := h.userSrvc.SetAdmin(targetUser, true); err != nil {
-			routeutils.SetError(r, w, "failed to promote user")
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.promote_failed"))
 		} else {
 			conf.Log().Info("user promoted to admin",
 				"admin", adminUser.ID,
 				"target", targetUser.ID,
 			)
-			routeutils.SetSuccess(r, w, fmt.Sprintf("User '%s' promoted to admin", targetUser.ID))
+			routeutils.SetSuccess(r, w, fmt.Sprintf(i18n.Translate(lang, "flash.user_promoted"), targetUser.ID))
 		}
 	case "demote_admin":
 		// prevent self-demotion
 		if adminUser.ID == targetUser.ID {
-			routeutils.SetError(r, w, "cannot demote yourself")
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.cannot_demote_self"))
 		} else {
 			// prevent removing the last admin
 			allUsers, _ := h.userSrvc.GetAll()
@@ -198,19 +200,19 @@ func (h *AdminHandler) PostUserAction(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			if adminCount <= 1 {
-				routeutils.SetError(r, w, "cannot remove the last admin")
+				routeutils.SetError(r, w, i18n.Translate(lang, "flash.cannot_remove_last_admin"))
 			} else if _, err := h.userSrvc.SetAdmin(targetUser, false); err != nil {
-				routeutils.SetError(r, w, "failed to demote user")
+				routeutils.SetError(r, w, i18n.Translate(lang, "flash.demote_failed"))
 			} else {
 				conf.Log().Info("user demoted from admin",
 					"admin", adminUser.ID,
 					"target", targetUser.ID,
 				)
-				routeutils.SetSuccess(r, w, fmt.Sprintf("User '%s' demoted from admin", targetUser.ID))
+				routeutils.SetSuccess(r, w, fmt.Sprintf(i18n.Translate(lang, "flash.user_demoted"), targetUser.ID))
 			}
 		}
 	default:
-		routeutils.SetError(r, w, "unknown action")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.unknown_action"))
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("%s/admin/users/%s", h.config.Server.BasePath, userId), http.StatusFound)
@@ -240,7 +242,7 @@ func (h *AdminHandler) GetTeams(w http.ResponseWriter, r *http.Request) {
 
 	vm := &view.AdminTeamsViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, adminUser),
 			User:            adminUser,
 		},
 		Teams:            teams,
@@ -255,6 +257,7 @@ func (h *AdminHandler) GetTeams(w http.ResponseWriter, r *http.Request) {
 
 func (h *AdminHandler) PostCreateTeam(w http.ResponseWriter, r *http.Request) {
 	adminUser := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, adminUser)
 	name := r.FormValue("name")
 	description := r.FormValue("description")
 	ownerID := r.FormValue("owner_id")
@@ -263,20 +266,20 @@ func (h *AdminHandler) PostCreateTeam(w http.ResponseWriter, r *http.Request) {
 	description = strings.TrimSpace(description)
 
 	if name == "" || ownerID == "" {
-		routeutils.SetError(r, w, "name and owner are required")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.name_owner_required"))
 		http.Redirect(w, r, fmt.Sprintf("%s/admin/teams", h.config.Server.BasePath), http.StatusFound)
 		return
 	}
 
 	if _, err := h.userSrvc.GetUserById(ownerID); err != nil {
-		routeutils.SetError(r, w, "owner user not found")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.owner_not_found"))
 		http.Redirect(w, r, fmt.Sprintf("%s/admin/teams", h.config.Server.BasePath), http.StatusFound)
 		return
 	}
 
 	team, err := h.teamSrvc.CreateTeam(name, description, ownerID)
 	if err != nil {
-		routeutils.SetError(r, w, "failed to create team")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.team_create_failed"))
 		http.Redirect(w, r, fmt.Sprintf("%s/admin/teams", h.config.Server.BasePath), http.StatusFound)
 		return
 	}
@@ -287,7 +290,7 @@ func (h *AdminHandler) PostCreateTeam(w http.ResponseWriter, r *http.Request) {
 		"team_name", team.Name,
 	)
 
-	routeutils.SetSuccess(r, w, fmt.Sprintf("Team '%s' created successfully", team.Name))
+	routeutils.SetSuccess(r, w, fmt.Sprintf(i18n.Translate(lang, "flash.team_created"), team.Name))
 	http.Redirect(w, r, fmt.Sprintf("%s/admin/teams/%s", h.config.Server.BasePath, team.ID), http.StatusFound)
 }
 
@@ -297,11 +300,12 @@ func (h *AdminHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	adminUser := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, adminUser)
 	teamID := chi.URLParam(r, "id")
 
 	team, err := h.teamSrvc.GetByID(teamID)
 	if err != nil {
-		routeutils.SetError(r, w, "team not found")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.team_not_found"))
 		http.Redirect(w, r, fmt.Sprintf("%s/admin/teams", h.config.Server.BasePath), http.StatusFound)
 		return
 	}
@@ -311,7 +315,7 @@ func (h *AdminHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 
 	vm := &view.AdminTeamDetailViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, adminUser),
 			User:            adminUser,
 		},
 		Team:     team,
@@ -326,12 +330,13 @@ func (h *AdminHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 
 func (h *AdminHandler) PostTeamAction(w http.ResponseWriter, r *http.Request) {
 	adminUser := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, adminUser)
 	teamID := chi.URLParam(r, "id")
 	action := r.FormValue("action")
 
 	team, err := h.teamSrvc.GetByID(teamID)
 	if err != nil {
-		routeutils.SetError(r, w, "team not found")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.team_not_found"))
 		http.Redirect(w, r, fmt.Sprintf("%s/admin/teams", h.config.Server.BasePath), http.StatusFound)
 		return
 	}
@@ -339,13 +344,13 @@ func (h *AdminHandler) PostTeamAction(w http.ResponseWriter, r *http.Request) {
 	switch strings.ToLower(action) {
 	case "delete":
 		if err := h.teamSrvc.DeleteTeam(teamID); err != nil {
-			routeutils.SetError(r, w, "failed to delete team")
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.team_delete_failed"))
 		} else {
 			conf.Log().Info("team deleted",
 				"admin", adminUser.ID,
 				"team_id", teamID,
 			)
-			routeutils.SetSuccess(r, w, fmt.Sprintf("Team '%s' deleted", team.Name))
+			routeutils.SetSuccess(r, w, fmt.Sprintf(i18n.Translate(lang, "flash.team_deleted"), team.Name))
 		}
 		http.Redirect(w, r, fmt.Sprintf("%s/admin/teams", h.config.Server.BasePath), http.StatusFound)
 		return
@@ -354,23 +359,23 @@ func (h *AdminHandler) PostTeamAction(w http.ResponseWriter, r *http.Request) {
 		newName := strings.TrimSpace(r.FormValue("name"))
 		newDescription := strings.TrimSpace(r.FormValue("description"))
 		if newName == "" {
-			routeutils.SetError(r, w, "team name is required")
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.team_name_required"))
 			break
 		}
 		team.Name = newName
 		team.Description = newDescription
 		if _, err := h.teamSrvc.UpdateTeam(team); err != nil {
-			routeutils.SetError(r, w, "failed to update team")
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.team_update_failed"))
 		} else {
 			conf.Log().Info("team updated",
 				"admin", adminUser.ID,
 				"team_id", teamID,
 			)
-			routeutils.SetSuccess(r, w, "Team updated successfully")
+			routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.team_updated"))
 		}
 
 	default:
-		routeutils.SetError(r, w, "unknown action")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.unknown_action"))
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("%s/admin/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
@@ -378,18 +383,19 @@ func (h *AdminHandler) PostTeamAction(w http.ResponseWriter, r *http.Request) {
 
 func (h *AdminHandler) PostTeamMemberAction(w http.ResponseWriter, r *http.Request) {
 	adminUser := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, adminUser)
 	teamID := chi.URLParam(r, "id")
 	action := r.FormValue("action")
 	userID := r.FormValue("user_id")
 
 	if userID == "" {
-		routeutils.SetError(r, w, "user is required")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.user_required"))
 		http.Redirect(w, r, fmt.Sprintf("%s/admin/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
 		return
 	}
 
 	if _, err := h.teamSrvc.GetByID(teamID); err != nil {
-		routeutils.SetError(r, w, "team not found")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.team_not_found"))
 		http.Redirect(w, r, fmt.Sprintf("%s/admin/teams", h.config.Server.BasePath), http.StatusFound)
 		return
 	}
@@ -397,7 +403,7 @@ func (h *AdminHandler) PostTeamMemberAction(w http.ResponseWriter, r *http.Reque
 	switch strings.ToLower(action) {
 	case "add":
 		if _, err := h.userSrvc.GetUserById(userID); err != nil {
-			routeutils.SetError(r, w, "user not found")
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.user_not_found"))
 			http.Redirect(w, r, fmt.Sprintf("%s/admin/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
 			return
 		}
@@ -407,31 +413,31 @@ func (h *AdminHandler) PostTeamMemberAction(w http.ResponseWriter, r *http.Reque
 		}
 		if _, err := h.teamSrvc.AddMember(teamID, userID, role); err != nil {
 			conf.Log().Request(r).Error("failed to add team member", "error", err)
-			routeutils.SetError(r, w, "failed to add member")
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.member_add_failed"))
 		} else {
 			conf.Log().Info("team member added",
 				"admin", adminUser.ID,
 				"team_id", teamID,
 				"user_id", userID,
 			)
-			routeutils.SetSuccess(r, w, "Member added successfully")
+			routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.member_added"))
 		}
 
 	case "remove":
 		if err := h.teamSrvc.RemoveMember(teamID, userID); err != nil {
 			conf.Log().Request(r).Error("failed to remove team member", "error", err)
-			routeutils.SetError(r, w, "failed to remove member")
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.member_remove_failed"))
 		} else {
 			conf.Log().Info("team member removed",
 				"admin", adminUser.ID,
 				"team_id", teamID,
 				"user_id", userID,
 			)
-			routeutils.SetSuccess(r, w, "Member removed successfully")
+			routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.member_removed"))
 		}
 
 	default:
-		routeutils.SetError(r, w, "unknown action")
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.unknown_action"))
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("%s/admin/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)

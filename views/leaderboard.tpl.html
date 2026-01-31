@@ -21,26 +21,26 @@
 <main class="mt-10 grow flex justify-center w-full" id="leaderboard-page">
     <div class="flex flex-col grow mt-10 max-available">
         <div class="flex items-center justify-start" style="margin-bottom: 0.5rem">
-            <h1 class="h1 inline-block">Leaderboard</h1>
+            <h1 class="h1 inline-block">{{ .T "leaderboard.title" }}</h1>
             {{ if .IntervalLabel }}
             <span class="text-muted text-xl inline-block ml-1">&nbsp;({{ .IntervalLabel }})</span>
             {{ end }}
         </div>
 
         <p class="block text-sm text-foreground w-full lg:w-3/4 mb-8">
-            Wakapi's leaderboard shows a ranking of the most active users on this server, given they opted in to get listed on the public leaderboard. Statistics are updated at least every 12 hours and are based on the users' total coding time in a pre-defined interval.
-            To participate, log in, go to <a class="link" href="settings#permissions">Settings 🠒 Permissions</a> and enable leaderboards.
+            {{ .T "leaderboard.description" }}
+            {{ .T "leaderboard.participate_hint" }} <a class="link" href="settings#permissions">{{ .T "leaderboard.participate_link" }}</a> {{ .T "leaderboard.participate_suffix" }}
         </p>
 
         <ul class="flex space-x-4 mb-4 text-muted">
             <li class="font-semibold text-xl {{ if eq .Tab "total" }} text-foreground {{ else }} hover:text-secondary {{ end }}">
-                <a href="leaderboard">Total</a>
+                <a href="leaderboard">{{ .T "leaderboard.total" }}</a>
             </li>
             <li class="font-semibold text-xl {{ if eq .Tab "language" }} text-foreground {{ else }} hover:text-secondary {{ end }}">
-                <a href="leaderboard?by=language">By Language</a>
+                <a href="leaderboard?by=language">{{ .T "leaderboard.by_language" }}</a>
             </li>
             <li class="font-semibold text-xl {{ if eq .Tab "teams" }} text-foreground {{ else }} hover:text-secondary {{ end }}">
-                <a href="leaderboard?tab=teams">Teams</a>
+                <a href="leaderboard?tab=teams">{{ .T "leaderboard.teams" }}</a>
             </li>
         </ul>
 
@@ -61,7 +61,7 @@
                             {{ else }}
                             <strong class="text-ellipsis truncate">{{ $item.TeamName }}</strong>
                             {{ end }}
-                            <span class="text-sm text-muted ml-2">{{ $item.MemberCount }} members</span>
+                            <span class="text-sm text-muted ml-2">{{ $item.MemberCount }} {{ $.T "common.members" }}</span>
                         </div>
                     </div>
                     <div class="flex-1 mx-1 hidden sm:inline-block truncate leading-6 align-middle">
@@ -79,7 +79,7 @@
             {{ else }}
             <p>
                 <span class="iconify inline text-white text-base" data-icon="twemoji:frowning-face"></span>&nbsp;
-                No teams found ...
+                {{ $.T "leaderboard.no_teams" }}
             </p>
             {{ end }}
         </div>
@@ -121,7 +121,7 @@
                             <strong class="text-ellipsis truncate">@{{ $item.UserID }}</strong>
                             {{ end }}
                             {{ if $item.User.HasActiveSubscription }}
-                            <span class="iconify inline text-gold ml-1" data-icon="jam:crown-f" style="margin-bottom: -2px" title="{{ $item.UserID }} is a supporter of Wakapi!"></span>
+                            <span class="iconify inline text-gold ml-1" data-icon="jam:crown-f" style="margin-bottom: -2px" title="{{ printf ($.T "leaderboard.supporter_title") $item.UserID }}"></span>
                             {{ end }}
                         </div>
                     </div>
@@ -137,11 +137,11 @@
                 </li>
                 {{ end }}
             </ol>
-            <p class="text-sm pt-8">Last Updated: {{ .LastUpdate | datetimetz }}</p>
+            <p class="text-sm pt-8">{{ .T "leaderboard.last_updated" }} {{ .LastUpdate | datetimetz }}</p>
             {{ else }}
             <p>
                 <span class="iconify inline text-white text-base" data-icon="twemoji:frowning-face"></span>&nbsp;
-                The leaderboard is currently empty ...
+                {{ .T "leaderboard.empty" }}
             </p>
             {{ end }}
 

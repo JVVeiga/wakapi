@@ -82,7 +82,7 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 			conf.Log().Request(r).Error("error while fetching team leaderboard", "error", err)
 			return &view.LeaderboardViewModel{
 				SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-					SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}),
+					SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}, r, user),
 					User:            user,
 				},
 				Tab: tab,
@@ -100,7 +100,7 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 
 		vm := &view.LeaderboardViewModel{
 			SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-				SharedViewModel: view.NewSharedViewModel(h.config, nil),
+				SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
 				User:            user,
 			},
 			Tab:           tab,
@@ -123,7 +123,7 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 			conf.Log().Request(r).Error("error while fetching general leaderboard items", "error", err)
 			return &view.LeaderboardViewModel{
 				SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-					SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}),
+					SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}, r, user),
 				},
 			}
 		}
@@ -144,7 +144,7 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 				conf.Log().Request(r).Error("error while fetching general leaderboard items", "error", err)
 				return &view.LeaderboardViewModel{
 					SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-						SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}),
+						SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}, r, user),
 					},
 				}
 			}
@@ -180,7 +180,7 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 		} else {
 			return &view.LeaderboardViewModel{
 				SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-					SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: fmt.Sprintf("unsupported aggregation '%s'", byParam)}),
+					SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: fmt.Sprintf("unsupported aggregation '%s'", byParam)}, r, user),
 				},
 			}
 		}
@@ -192,7 +192,7 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 
 	vm := &view.LeaderboardViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
 			User:            user,
 		},
 		Tab:                  tab,

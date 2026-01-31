@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ .Language }}">
 
 {{ template "head.tpl.html" . }}
 
@@ -12,37 +12,37 @@
 <main class="mt-10 grow flex justify-center w-full">
     <div class="grow max-w-lg mt-10">
         <div class="mb-8">
-            <h1 class="h1">Welcome!</h1>
-            <span class="text-secondary">Log in to continue using Wakapi. First time? Check out the <a href="setup" class="text-foreground hover:text-secondary">setup instructions</a>.</span>
+            <h1 class="h1">{{ .T "login.welcome" }}</h1>
+            <span class="text-secondary">{{ .T "login.subtitle" }} <a href="setup" class="text-foreground hover:text-secondary">{{ .T "login.setup_instructions" }}</a>.</span>
         </div>
         {{ if not .DisableLocalAuth }}
         <form action="login" method="post" class="mb-8">
-            <div class="font-semibold mb-2 text-secondary">Local Sign-On</div>
+            <div class="font-semibold mb-2 text-secondary">{{ .T "login.local_signon" }}</div>
             <div class="mb-4">
                 <input class="input-default"
                        type="text" id="username" autocomplete="username"
-                       name="username" placeholder="Username" minlength="1" required autofocus>
+                       name="username" placeholder="{{ .T "login.username" }}" minlength="1" required autofocus>
             </div>
             <div class="mb-4">
                 <input class="input-default"
                        type="password" id="password" autocomplete="current-password"
-                       name="password" placeholder="Password" minlength="6" required>
+                       name="password" placeholder="{{ .T "login.password" }}" minlength="6" required>
             </div>
             <div class="flex justify-between items-center">
                 <a href="reset-password" class="text-muted text-sm">
-                    Forgot password?
+                    {{ .T "login.forgot_password" }}
                 </a>
                 <div class="flex space-x-2">
                     {{ if .AllowSignup }}
                     <a href="signup">
-                        <button type="button" class="btn-default">Sign up</button>
+                        <button type="button" class="btn-default">{{ .T "login.signup_link" }}</button>
                     </a>
                     {{ else }}
-                    <a title="The administrator of this instance has disabled sign up.">
-                        <button type="button" class="btn-disabled" disabled> Sign up </button>
+                    <a title="{{ .T "login.signup_disabled" }}">
+                        <button type="button" class="btn-disabled" disabled> {{ .T "login.signup_link" }} </button>
                     </a>
                     {{ end }}
-                    <button type="submit" class="btn-primary">Log in</button>
+                    <button type="submit" class="btn-primary">{{ .T "login.login" }}</button>
                 </div>
             </div>
         </form>
@@ -50,14 +50,14 @@
 
         {{ if len .OidcProviders }}
         <div>
-            <div class="font-semibold mb-2 text-secondary">Single Sign-On</div>
+            <div class="font-semibold mb-2 text-secondary">{{ .T "login.sso" }}</div>
             {{ range $provider := .OidcProviders }}
             <a href="oidc/{{ $provider.Name | lower }}/login" class="block mb-2">
                 <button type="button" class="btn-default w-full flex items-center gap-2 justify-center">
                     {{ if $.OidcProviderIcon $provider.Name }}
                     <span class="iconify inline text-white text-base" data-icon="{{ ($.OidcProviderIcon $provider.Name) | urlSafe }}"></span>
                     {{ end }}
-                    Login with {{ $provider.DisplayName }}
+                    {{ printf ($.T "login.sso_with") $provider.DisplayName }}
                 </button>
             </a>
             {{ end }}

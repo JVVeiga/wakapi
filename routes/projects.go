@@ -68,7 +68,7 @@ func (h *ProjectsHandler) buildViewModel(r *http.Request, w http.ResponseWriter)
 		conf.Log().Request(r).Error("error while fetching project stats", "userID", user.ID, "error", err)
 		return &view.ProjectsViewModel{
 			SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}),
+				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}, r, user),
 				User:            user,
 			},
 		}
@@ -76,7 +76,7 @@ func (h *ProjectsHandler) buildViewModel(r *http.Request, w http.ResponseWriter)
 
 	vm := &view.ProjectsViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
 			User:            user,
 		},
 		Projects:   projects,

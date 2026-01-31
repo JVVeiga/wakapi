@@ -25,6 +25,7 @@ import (
 	"github.com/muety/wakapi/services"
 	"github.com/muety/wakapi/services/imports"
 	"github.com/muety/wakapi/utils"
+	i18n "github.com/muety/wakapi/views/i18n"
 )
 
 const criticalError = "a critical error has occurred, sorry"
@@ -118,9 +119,11 @@ func (h *SettingsHandler) PostIndex(w http.ResponseWriter, r *http.Request) {
 		loadTemplates()
 	}
 
+	lang := routeutils.ResolveLanguage(r, middlewares.GetPrincipal(r))
+
 	if err := r.ParseForm(); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		err = templates[conf.SettingsTemplate].Execute(w, h.buildViewModel(r, w, nil).WithError("missing form values"))
+		err = templates[conf.SettingsTemplate].Execute(w, h.buildViewModel(r, w, nil).WithError(i18n.Translate(lang, "flash.missing_form_values")))
 		if err != nil {
 			panic(err)
 		}
@@ -134,7 +137,7 @@ func (h *SettingsHandler) PostIndex(w http.ResponseWriter, r *http.Request) {
 	if actionFunc == nil {
 		slog.Warn("failed to dispatch action", "action", action)
 		w.WriteHeader(http.StatusBadRequest)
-		templates[conf.SettingsTemplate].Execute(w, h.buildViewModel(r, w, nil).WithError("unknown action requests"))
+		templates[conf.SettingsTemplate].Execute(w, h.buildViewModel(r, w, nil).WithError(i18n.Translate(lang, "flash.unknown_action")))
 		return
 	}
 
@@ -216,21 +219,22 @@ func (h *SettingsHandler) actionUpdateUser(w http.ResponseWriter, r *http.Reques
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 
 	var payload models.UserDataUpdate
 	if err := r.ParseForm(); err != nil {
-		return actionResult{http.StatusBadRequest, "", "missing parameters", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.missing_parameters"), nil}
 	}
 	if err := credentialsDecoder.Decode(&payload, r.PostForm); err != nil {
-		return actionResult{http.StatusBadRequest, "", "missing parameters", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.missing_parameters"), nil}
 	}
 
 	if !payload.IsValid() {
-		return actionResult{http.StatusBadRequest, "", "invalid parameters - perhaps invalid e-mail address?", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.invalid_email"), nil}
 	}
 
 	if payload.Email == "" && user.HasActiveSubscription() {
-		return actionResult{http.StatusBadRequest, "", "cannot unset email while subscription is active", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.cannot_unset_email"), nil}
 	}
 
 	user.Email = payload.Email
@@ -241,12 +245,12 @@ func (h *SettingsHandler) actionUpdateUser(w http.ResponseWriter, r *http.Reques
 
 	if _, err := h.userSrvc.Update(user); err != nil {
 		if strings.Contains(err.Error(), "email address already in use") {
-			return actionResult{http.StatusBadRequest, "", "got invalid user data (email already taken?)", nil}
+			return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.invalid_user_data"), nil}
 		}
-		return actionResult{http.StatusInternalServerError, "", conf.ErrInternalServerError, nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
-	return actionResult{http.StatusOK, "user updated successfully", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.user_updated"), "", nil}
 }
 
 func (h *SettingsHandler) actionChangePassword(w http.ResponseWriter, r *http.Request) actionResult {
@@ -255,36 +259,37 @@ func (h *SettingsHandler) actionChangePassword(w http.ResponseWriter, r *http.Re
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 
 	if user.AuthType != "local" {
-		return actionResult{http.StatusBadRequest, "", "cannot reset password for non-local user", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.cannot_reset_nonlocal_pw"), nil}
 	}
 
 	var credentials models.CredentialsReset
 	if err := r.ParseForm(); err != nil {
-		return actionResult{http.StatusBadRequest, "", "missing parameters", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.missing_parameters"), nil}
 	}
 	if err := credentialsDecoder.Decode(&credentials, r.PostForm); err != nil {
-		return actionResult{http.StatusBadRequest, "", "missing parameters", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.missing_parameters"), nil}
 	}
 
 	if !utils.ComparePassword(user.Password, credentials.PasswordOld, h.config.Security.PasswordSalt) {
-		return actionResult{http.StatusUnauthorized, "", "invalid credentials", nil}
+		return actionResult{http.StatusUnauthorized, "", i18n.Translate(lang, "flash.invalid_credentials"), nil}
 	}
 
 	if !credentials.IsValid() {
-		return actionResult{http.StatusBadRequest, "", "invalid parameters", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.invalid_parameters"), nil}
 	}
 
 	user.Password = credentials.PasswordNew
 	if hash, err := utils.HashPassword(user.Password, h.config.Security.PasswordSalt); err != nil {
-		return actionResult{http.StatusInternalServerError, "", conf.ErrInternalServerError, nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	} else {
 		user.Password = hash
 	}
 
 	if _, err := h.userSrvc.Update(user); err != nil {
-		return actionResult{http.StatusInternalServerError, "", conf.ErrInternalServerError, nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
 	login := &models.Login{
@@ -293,11 +298,11 @@ func (h *SettingsHandler) actionChangePassword(w http.ResponseWriter, r *http.Re
 	}
 	encoded, err := h.config.Security.SecureCookie.Encode(models.AuthCookieKey, login.Username)
 	if err != nil {
-		return actionResult{http.StatusInternalServerError, "", conf.ErrInternalServerError, nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
 	http.SetCookie(w, h.config.CreateCookie(models.AuthCookieKey, encoded))
-	return actionResult{http.StatusOK, "password was updated successfully", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.password_was_updated"), "", nil}
 }
 
 func (h *SettingsHandler) actionChangeUserId(w http.ResponseWriter, r *http.Request) actionResult {
@@ -306,20 +311,21 @@ func (h *SettingsHandler) actionChangeUserId(w http.ResponseWriter, r *http.Requ
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 
 	newUserId := strings.TrimSpace(r.PostFormValue("new_userid"))
 	if !models.ValidateUsername(newUserId) || newUserId == user.ID {
-		return actionResult{http.StatusBadRequest, "", "invalid username", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.invalid_username_value"), nil}
 	}
 	if existing, _ := h.userSrvc.GetUserById(newUserId); existing != nil {
-		return actionResult{http.StatusConflict, "", "already taken", nil}
+		return actionResult{http.StatusConflict, "", i18n.Translate(lang, "flash.username_taken"), nil}
 	}
 
 	if _, err := h.userSrvc.ChangeUserId(user, newUserId); err != nil {
-		return actionResult{http.StatusInternalServerError, "", conf.ErrInternalServerError, nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
-	routeutils.SetSuccess(r, w, fmt.Sprintf("Successfully changed your username to %s, please log back in.", newUserId))
+	routeutils.SetSuccess(r, w, fmt.Sprintf(i18n.Translate(lang, "flash.username_changed"), newUserId))
 	http.SetCookie(w, h.config.GetClearCookie(models.AuthCookieKey))
 	http.Redirect(w, r, h.config.Server.BasePath, http.StatusFound)
 	return actionResult{-1, "", "", nil}
@@ -331,11 +337,12 @@ func (h *SettingsHandler) actionResetApiKey(w http.ResponseWriter, r *http.Reque
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	if _, err := h.userSrvc.ResetApiKey(user); err != nil {
-		return actionResult{http.StatusInternalServerError, "", conf.ErrInternalServerError, nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
-	msg := fmt.Sprintf("your new api key is: %s", user.ApiKey)
+	msg := fmt.Sprintf(i18n.Translate(lang, "flash.api_key_new"), user.ApiKey)
 	return actionResult{http.StatusOK, msg, "", nil}
 }
 
@@ -346,17 +353,18 @@ func (h *SettingsHandler) actionUpdateLeaderboard(w http.ResponseWriter, r *http
 
 	var err error
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	defer h.userSrvc.FlushCache()
 
 	user.PublicLeaderboard, err = strconv.ParseBool(r.PostFormValue("enable_leaderboard"))
 
 	if err != nil {
-		return actionResult{http.StatusBadRequest, "", "invalid input", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.invalid_input"), nil}
 	}
 	if _, err := h.userSrvc.Update(user); err != nil {
-		return actionResult{http.StatusInternalServerError, "", "internal sever error", nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
-	return actionResult{http.StatusOK, "settings updated", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.settings_updated"), "", nil}
 }
 
 func (h *SettingsHandler) actionUpdateExcludeUnknownProjects(w http.ResponseWriter, r *http.Request) actionResult {
@@ -366,19 +374,20 @@ func (h *SettingsHandler) actionUpdateExcludeUnknownProjects(w http.ResponseWrit
 
 	var err error
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	defer h.userSrvc.FlushCache()
 
 	if h.isAggregationLocked(user.ID) {
-		return actionResult{http.StatusConflict, "", "summary regeneration already in progress, please wait", nil}
+		return actionResult{http.StatusConflict, "", i18n.Translate(lang, "flash.summary_regen_in_progress"), nil}
 	}
 
 	user.ExcludeUnknownProjects, err = strconv.ParseBool(r.PostFormValue("exclude_unknown_projects"))
 
 	if err != nil {
-		return actionResult{http.StatusBadRequest, "", "invalid input", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.invalid_input"), nil}
 	}
 	if _, err := h.userSrvc.Update(user); err != nil {
-		return actionResult{http.StatusInternalServerError, "", "internal sever error", nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
 	go func(user *models.User, r *http.Request) {
@@ -389,7 +398,7 @@ func (h *SettingsHandler) actionUpdateExcludeUnknownProjects(w http.ResponseWrit
 		}
 	}(user, r)
 
-	return actionResult{http.StatusOK, "regenerating summaries, this might take a while", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.regenerating_summaries"), "", nil}
 }
 
 func (h *SettingsHandler) actionUpdateHeartbeatsTimeout(w http.ResponseWriter, r *http.Request) actionResult {
@@ -399,20 +408,21 @@ func (h *SettingsHandler) actionUpdateHeartbeatsTimeout(w http.ResponseWriter, r
 
 	var err error
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	defer h.userSrvc.FlushCache()
 
 	val, err := strconv.ParseInt(r.PostFormValue("heartbeats_timeout"), 0, 0)
 	dur := time.Duration(val) * time.Minute
 	if err != nil || dur < models.MinHeartbeatsTimeout || dur > models.MaxHeartbeatsTimeout {
-		return actionResult{http.StatusBadRequest, "", "invalid input", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.invalid_input"), nil}
 	}
 	user.HeartbeatsTimeoutSec = int(dur.Seconds())
 
 	if _, err := h.userSrvc.Update(user); err != nil {
-		return actionResult{http.StatusInternalServerError, "", "internal sever error", nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
-	return actionResult{http.StatusOK, "Done. To apply this change to already existing data, please regenerate your summaries.", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.heartbeats_timeout_updated"), "", nil}
 }
 
 func (h *SettingsHandler) actionUpdateReadmeStatsBaseUrl(w http.ResponseWriter, r *http.Request) actionResult {
@@ -421,15 +431,16 @@ func (h *SettingsHandler) actionUpdateReadmeStatsBaseUrl(w http.ResponseWriter, 
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	defer h.userSrvc.FlushUserCache(user.ID)
 
 	user.ReadmeStatsBaseUrl = r.PostFormValue("readme_stats_base_url")
 
 	if _, err := h.userSrvc.Update(user); err != nil {
-		return actionResult{http.StatusInternalServerError, "", "internal sever error", nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
-	return actionResult{http.StatusOK, "settings updated", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.settings_updated"), "", nil}
 }
 
 func (h *SettingsHandler) actionUpdateSharing(w http.ResponseWriter, r *http.Request) actionResult {
@@ -439,6 +450,7 @@ func (h *SettingsHandler) actionUpdateSharing(w http.ResponseWriter, r *http.Req
 
 	var err error
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 
 	defer h.userSrvc.FlushUserCache(user.ID)
 
@@ -452,14 +464,14 @@ func (h *SettingsHandler) actionUpdateSharing(w http.ResponseWriter, r *http.Req
 	user.ShareDataMaxDays, err = strconv.Atoi(r.PostFormValue("max_days"))
 
 	if err != nil {
-		return actionResult{http.StatusBadRequest, "", "invalid input", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.invalid_input"), nil}
 	}
 
 	if _, err := h.userSrvc.Update(user); err != nil {
-		return actionResult{http.StatusInternalServerError, "", "internal sever error", nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
-	return actionResult{http.StatusOK, "settings updated", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.settings_updated"), "", nil}
 }
 
 func (h *SettingsHandler) actionDeleteAlias(w http.ResponseWriter, r *http.Request) actionResult {
@@ -468,6 +480,7 @@ func (h *SettingsHandler) actionDeleteAlias(w http.ResponseWriter, r *http.Reque
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	aliasKey := r.PostFormValue("key")
 	aliasType, err := strconv.Atoi(r.PostFormValue("type"))
 	if err != nil {
@@ -475,12 +488,12 @@ func (h *SettingsHandler) actionDeleteAlias(w http.ResponseWriter, r *http.Reque
 	}
 
 	if aliases, err := h.aliasSrvc.GetByUserAndKeyAndType(user.ID, aliasKey, uint8(aliasType)); err != nil {
-		return actionResult{http.StatusNotFound, "", "aliases not found", nil}
+		return actionResult{http.StatusNotFound, "", i18n.Translate(lang, "flash.aliases_not_found"), nil}
 	} else if err := h.aliasSrvc.DeleteMulti(aliases); err != nil {
-		return actionResult{http.StatusInternalServerError, "", "could not delete aliases", nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.could_not_delete_aliases"), nil}
 	}
 
-	return actionResult{http.StatusOK, "aliases deleted successfully", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.aliases_deleted"), "", nil}
 }
 
 func (h *SettingsHandler) actionAddAlias(w http.ResponseWriter, r *http.Request) actionResult {
@@ -488,6 +501,7 @@ func (h *SettingsHandler) actionAddAlias(w http.ResponseWriter, r *http.Request)
 		loadTemplates()
 	}
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	aliasKey := r.PostFormValue("key")
 	aliasValue := r.PostFormValue("value")
 	aliasType, err := strconv.Atoi(r.PostFormValue("type"))
@@ -504,10 +518,10 @@ func (h *SettingsHandler) actionAddAlias(w http.ResponseWriter, r *http.Request)
 
 	if _, err := h.aliasSrvc.Create(alias); err != nil {
 		// TODO: distinguish between bad request, conflict and server error
-		return actionResult{http.StatusBadRequest, "", "invalid input", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.invalid_input"), nil}
 	}
 
-	return actionResult{http.StatusOK, "alias added successfully", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.alias_added"), "", nil}
 }
 
 func (h *SettingsHandler) actionAddLabel(w http.ResponseWriter, r *http.Request) actionResult {
@@ -515,6 +529,7 @@ func (h *SettingsHandler) actionAddLabel(w http.ResponseWriter, r *http.Request)
 		loadTemplates()
 	}
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 
 	var labels []*models.ProjectLabel
 
@@ -528,7 +543,7 @@ func (h *SettingsHandler) actionAddLabel(w http.ResponseWriter, r *http.Request)
 	}
 
 	for _, label := range labels {
-		msg := "invalid input for project: " + label.ProjectKey
+		msg := fmt.Sprintf(i18n.Translate(lang, "flash.invalid_input_project"), label.ProjectKey)
 		if !label.IsValid() {
 			return actionResult{http.StatusBadRequest, "", msg, nil}
 		}
@@ -537,7 +552,7 @@ func (h *SettingsHandler) actionAddLabel(w http.ResponseWriter, r *http.Request)
 			return actionResult{http.StatusBadRequest, "", msg, nil}
 		}
 	}
-	return actionResult{http.StatusOK, "label added to project successfully", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.label_added"), "", nil}
 }
 
 func (h *SettingsHandler) actionDeleteLabel(w http.ResponseWriter, r *http.Request) actionResult {
@@ -546,23 +561,24 @@ func (h *SettingsHandler) actionDeleteLabel(w http.ResponseWriter, r *http.Reque
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	labelKey := r.PostFormValue("key")     // label key
 	labelValue := r.PostFormValue("value") // project key
 
 	labels, err := h.projectLabelSrvc.GetByUser(user.ID)
 	if err != nil {
-		return actionResult{http.StatusInternalServerError, "", "could not delete label", nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.could_not_delete_label"), nil}
 	}
 
 	for _, l := range labels {
 		if l.Label == labelKey && l.ProjectKey == labelValue {
 			if err := h.projectLabelSrvc.Delete(l); err != nil {
-				return actionResult{http.StatusInternalServerError, "", "could not delete label", nil}
+				return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.could_not_delete_label"), nil}
 			}
-			return actionResult{http.StatusOK, "label deleted successfully", "", nil}
+			return actionResult{http.StatusOK, i18n.Translate(lang, "flash.label_deleted"), "", nil}
 		}
 	}
-	return actionResult{http.StatusNotFound, "", "label not found", nil}
+	return actionResult{http.StatusNotFound, "", i18n.Translate(lang, "flash.label_not_found"), nil}
 }
 
 func (h *SettingsHandler) actionDeleteLanguageMapping(w http.ResponseWriter, r *http.Request) actionResult {
@@ -571,23 +587,24 @@ func (h *SettingsHandler) actionDeleteLanguageMapping(w http.ResponseWriter, r *
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	id, err := strconv.Atoi(r.PostFormValue("mapping_id"))
 	if err != nil {
-		return actionResult{http.StatusInternalServerError, "", "could not delete mapping", nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.could_not_delete_mapping"), nil}
 	}
 
 	mapping, err := h.languageMappingSrvc.GetById(uint(id))
 	if err != nil || mapping == nil {
-		return actionResult{http.StatusNotFound, "", "mapping not found", nil}
+		return actionResult{http.StatusNotFound, "", i18n.Translate(lang, "flash.mapping_not_found"), nil}
 	} else if mapping.UserID != user.ID {
-		return actionResult{http.StatusForbidden, "", "not allowed to delete mapping", nil}
+		return actionResult{http.StatusForbidden, "", i18n.Translate(lang, "flash.not_allowed_delete_mapping"), nil}
 	}
 
 	if err := h.languageMappingSrvc.Delete(mapping); err != nil {
-		return actionResult{http.StatusInternalServerError, "", "could not delete mapping", nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.could_not_delete_mapping"), nil}
 	}
 
-	return actionResult{http.StatusOK, "mapping deleted successfully", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.mapping_deleted"), "", nil}
 }
 
 func (h *SettingsHandler) actionAddLanguageMapping(w http.ResponseWriter, r *http.Request) actionResult {
@@ -595,6 +612,7 @@ func (h *SettingsHandler) actionAddLanguageMapping(w http.ResponseWriter, r *htt
 		loadTemplates()
 	}
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	extension := r.PostFormValue("extension")
 	language := r.PostFormValue("language")
 
@@ -609,10 +627,10 @@ func (h *SettingsHandler) actionAddLanguageMapping(w http.ResponseWriter, r *htt
 	}
 
 	if _, err := h.languageMappingSrvc.Create(mapping); err != nil {
-		return actionResult{http.StatusConflict, "", "mapping already exists", nil}
+		return actionResult{http.StatusConflict, "", i18n.Translate(lang, "flash.mapping_exists"), nil}
 	}
 
-	return actionResult{http.StatusOK, "mapping added successfully", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.mapping_added"), "", nil}
 }
 
 func (h *SettingsHandler) actionSetWakatimeApiKey(w http.ResponseWriter, r *http.Request) actionResult {
@@ -621,6 +639,7 @@ func (h *SettingsHandler) actionSetWakatimeApiKey(w http.ResponseWriter, r *http
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	apiKey := r.PostFormValue("api_key")
 	apiUrl := r.PostFormValue("api_url")
 	if apiUrl == conf.WakatimeApiUrl || apiKey == "" {
@@ -629,14 +648,14 @@ func (h *SettingsHandler) actionSetWakatimeApiKey(w http.ResponseWriter, r *http
 
 	// Healthcheck, if a new API key is set, i.e. the feature is activated
 	if (user.WakatimeApiKey == "" && apiKey != "") && !h.validateWakatimeKey(apiKey, apiUrl) {
-		return actionResult{http.StatusBadRequest, "", "failed to connect to WakaTime, API key or endpoint URL invalid?", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.wakatime_connect_failed"), nil}
 	}
 
 	if _, err := h.userSrvc.SetWakatimeApiCredentials(user, apiKey, apiUrl); err != nil {
-		return actionResult{http.StatusInternalServerError, "", conf.ErrInternalServerError, nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
-	return actionResult{http.StatusOK, "Wakatime API Key updated successfully", "", nil}
+	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.wakatime_key_updated"), "", nil}
 }
 
 func (h *SettingsHandler) actionImportWakatime(w http.ResponseWriter, r *http.Request) actionResult {
@@ -644,13 +663,15 @@ func (h *SettingsHandler) actionImportWakatime(w http.ResponseWriter, r *http.Re
 		loadTemplates()
 	}
 
+	lang := routeutils.ResolveLanguage(r, middlewares.GetPrincipal(r))
+
 	if !h.config.App.ImportEnabled {
-		return actionResult{http.StatusForbidden, "", "imports are disabled on this server", nil}
+		return actionResult{http.StatusForbidden, "", i18n.Translate(lang, "flash.imports_disabled"), nil}
 	}
 
 	user := middlewares.GetPrincipal(r)
 	if user.WakatimeApiKey == "" {
-		return actionResult{http.StatusForbidden, "", "not connected to wakatime", nil}
+		return actionResult{http.StatusForbidden, "", i18n.Translate(lang, "flash.not_connected_wakatime"), nil}
 	}
 
 	useLegacyImporter, _ := strconv.ParseBool(r.PostFormValue("use_legacy_importer"))
@@ -663,7 +684,7 @@ func (h *SettingsHandler) actionImportWakatime(w http.ResponseWriter, r *http.Re
 			return actionResult{
 				http.StatusTooManyRequests,
 				"",
-				fmt.Sprintf("Too many data imports - you are only allowed to request an import every %d minutes.", h.config.App.ImportBackoffMin),
+				fmt.Sprintf(i18n.Translate(lang, "flash.too_many_imports_rate"), h.config.App.ImportBackoffMin),
 				nil,
 			}
 		}
@@ -673,7 +694,7 @@ func (h *SettingsHandler) actionImportWakatime(w http.ResponseWriter, r *http.Re
 			return actionResult{
 				http.StatusTooManyRequests,
 				"",
-				fmt.Sprintf("Too many data imports - last import ran less than %d hours ago, please wait.", h.config.App.ImportMaxRate),
+				fmt.Sprintf(i18n.Translate(lang, "flash.too_many_imports_max"), h.config.App.ImportMaxRate),
 				nil,
 			}
 		}
@@ -754,7 +775,7 @@ func (h *SettingsHandler) actionImportWakatime(w http.ResponseWriter, r *http.Re
 		Value: time.Now().Format(time.RFC822),
 	})
 
-	return actionResult{http.StatusAccepted, "Import started. This will take several minutes. Please check back later.", "", nil}
+	return actionResult{http.StatusAccepted, i18n.Translate(lang, "flash.import_started"), "", nil}
 }
 
 func (h *SettingsHandler) actionRegenerateSummaries(w http.ResponseWriter, r *http.Request) actionResult {
@@ -763,9 +784,10 @@ func (h *SettingsHandler) actionRegenerateSummaries(w http.ResponseWriter, r *ht
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 
 	if h.isAggregationLocked(user.ID) {
-		return actionResult{http.StatusConflict, "", "summary regeneration already in progress, please wait", nil}
+		return actionResult{http.StatusConflict, "", i18n.Translate(lang, "flash.summary_regen_in_progress"), nil}
 	}
 
 	go func(user *models.User, r *http.Request) {
@@ -776,7 +798,7 @@ func (h *SettingsHandler) actionRegenerateSummaries(w http.ResponseWriter, r *ht
 		}
 	}(user, r)
 
-	return actionResult{http.StatusAccepted, "summaries are being regenerated - this may take a up to a couple of minutes, please come back later", "", nil}
+	return actionResult{http.StatusAccepted, i18n.Translate(lang, "flash.summaries_regenerating"), "", nil}
 }
 
 func (h *SettingsHandler) actionClearData(w http.ResponseWriter, r *http.Request) actionResult {
@@ -785,6 +807,7 @@ func (h *SettingsHandler) actionClearData(w http.ResponseWriter, r *http.Request
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	slog.Info("user requested to delete all data", "userID", user.ID)
 
 	go func(user *models.User, r *http.Request) {
@@ -804,7 +827,7 @@ func (h *SettingsHandler) actionClearData(w http.ResponseWriter, r *http.Request
 		}
 	}(user, r)
 
-	return actionResult{http.StatusAccepted, "deletion in progress, this may take a couple of seconds", "", nil}
+	return actionResult{http.StatusAccepted, i18n.Translate(lang, "flash.deletion_in_progress"), "", nil}
 }
 
 func (h *SettingsHandler) actionDeleteUser(w http.ResponseWriter, r *http.Request) actionResult {
@@ -813,6 +836,7 @@ func (h *SettingsHandler) actionDeleteUser(w http.ResponseWriter, r *http.Reques
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	go func(user *models.User, r *http.Request) {
 		slog.Info("deleting user shortly", "userID", user.ID)
 		//time.Sleep(5 * time.Minute)
@@ -823,7 +847,7 @@ func (h *SettingsHandler) actionDeleteUser(w http.ResponseWriter, r *http.Reques
 		}
 	}(user, r)
 
-	routeutils.SetSuccess(r, w, "Your account will be deleted in a few minutes. Sorry to see you go.")
+	routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.account_deleted"))
 	http.SetCookie(w, h.config.GetClearCookie(models.AuthCookieKey))
 	http.Redirect(w, r, h.config.Server.BasePath, http.StatusFound)
 	return actionResult{-1, "", "", nil}
@@ -835,18 +859,19 @@ func (h *SettingsHandler) actionGenerateInvite(w http.ResponseWriter, r *http.Re
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	inviteCode := uuid.Must(uuid.NewV4()).String()[0:8]
 
 	if err := h.keyValueSrvc.PutString(&models.KeyStringValue{
 		Key:   fmt.Sprintf("%s_%s", conf.KeyInviteCode, inviteCode),
 		Value: fmt.Sprintf("%s,%s", user.ID, time.Now().Format(time.RFC3339)),
 	}); err != nil {
-		return actionResult{http.StatusInternalServerError, "", "failed to generate invite code", nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.invite_generate_failed"), nil}
 	}
 
 	return actionResult{
 		http.StatusOK,
-		"Successfully generated new invite code (see below)",
+		i18n.Translate(lang, "flash.invite_generated"),
 		"",
 		&map[string]interface{}{
 			valueInviteCode: inviteCode,
@@ -905,6 +930,7 @@ func (h *SettingsHandler) actionAddApiKey(w http.ResponseWriter, r *http.Request
 		loadTemplates()
 	}
 
+	lang := routeutils.ResolveLanguage(r, middlewares.GetPrincipal(r))
 	apiKey := uuid.Must(uuid.NewV4()).String()
 
 	if _, err := h.apiKeySrvc.Create(&models.ApiKey{
@@ -913,10 +939,10 @@ func (h *SettingsHandler) actionAddApiKey(w http.ResponseWriter, r *http.Request
 		ApiKey:   apiKey,
 		ReadOnly: r.PostFormValue("api_readonly") == "true",
 	}); err != nil {
-		return actionResult{http.StatusInternalServerError, "", conf.ErrInternalServerError, nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
-	msg := fmt.Sprintf("you added new api key: %s", apiKey)
+	msg := fmt.Sprintf(i18n.Translate(lang, "flash.api_key_added"), apiKey)
 	return actionResult{http.StatusOK, msg, "", nil}
 }
 
@@ -926,26 +952,27 @@ func (h *SettingsHandler) actionDeleteApiKey(w http.ResponseWriter, r *http.Requ
 	}
 
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	apiKeyValue := r.PostFormValue("api_key_value")
 
 	if apiKeyValue == user.ApiKey {
-		return actionResult{http.StatusBadRequest, "", "Main api key can only be regenerated, not deleted", nil}
+		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.main_apikey_regen_only"), nil}
 	}
 
 	apiKeys, err := h.apiKeySrvc.GetByUser(user.ID)
 	if err != nil {
-		return actionResult{http.StatusInternalServerError, "", "could not delete API key", nil}
+		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.could_not_delete_apikey"), nil}
 	}
 
 	for _, k := range apiKeys {
 		if k.ApiKey == apiKeyValue {
 			if err := h.apiKeySrvc.Delete(k); err != nil {
-				return actionResult{http.StatusInternalServerError, "", "could not delete API key", nil}
+				return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.could_not_delete_apikey"), nil}
 			}
-			return actionResult{http.StatusOK, "API key deleted successfully", "", nil}
+			return actionResult{http.StatusOK, i18n.Translate(lang, "flash.apikey_deleted"), "", nil}
 		}
 	}
-	return actionResult{http.StatusNotFound, "", "API key not found", nil}
+	return actionResult{http.StatusNotFound, "", i18n.Translate(lang, "flash.apikey_not_found"), nil}
 }
 
 func (h *SettingsHandler) buildViewModel(r *http.Request, w http.ResponseWriter, args *map[string]interface{}) *view.SettingsViewModel {
@@ -960,7 +987,7 @@ func (h *SettingsHandler) buildViewModel(r *http.Request, w http.ResponseWriter,
 		conf.Log().Request(r).Error("error while building alias map", "error", err)
 		return &view.SettingsViewModel{
 			SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}),
+				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}, r, user),
 				User:            user,
 			},
 		}
@@ -994,7 +1021,7 @@ func (h *SettingsHandler) buildViewModel(r *http.Request, w http.ResponseWriter,
 		conf.Log().Request(r).Error("error while building settings project label map", "error", err)
 		return &view.SettingsViewModel{
 			SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}),
+				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}, r, user),
 				User:            user,
 			},
 		}
@@ -1021,7 +1048,7 @@ func (h *SettingsHandler) buildViewModel(r *http.Request, w http.ResponseWriter,
 		conf.Log().Request(r).Error("error while fetching projects", "error", err)
 		return &view.SettingsViewModel{
 			SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}),
+				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}, r, user),
 				User:            user,
 			},
 		}
@@ -1039,7 +1066,7 @@ func (h *SettingsHandler) buildViewModel(r *http.Request, w http.ResponseWriter,
 		conf.Log().Request(r).Error("error while user's heartbeats range", "user", user.ID, "error", err)
 		return &view.SettingsViewModel{
 			SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}),
+				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}, r, user),
 				User:            user,
 			},
 		}
@@ -1063,7 +1090,7 @@ func (h *SettingsHandler) buildViewModel(r *http.Request, w http.ResponseWriter,
 		conf.Log().Request(r).Error("error while fetching user's api keys", "user", user.ID, "error", err)
 		return &view.SettingsViewModel{
 			SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}),
+				SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}, r, user),
 				User:            user,
 			},
 		}
@@ -1078,7 +1105,7 @@ func (h *SettingsHandler) buildViewModel(r *http.Request, w http.ResponseWriter,
 
 	vm := &view.SettingsViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
 			User:            user,
 		},
 		LanguageMappings:    mappings,

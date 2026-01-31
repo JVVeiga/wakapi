@@ -48,7 +48,7 @@ func (h *SetupHandler) GetIndex(w http.ResponseWriter, r *http.Request) {
 func (h *SetupHandler) buildViewModel(r *http.Request, w http.ResponseWriter) *view.SetupViewModel {
 	return &view.SetupViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, middlewares.GetPrincipal(r)),
 			User:            middlewares.GetPrincipal(r),
 		},
 	}

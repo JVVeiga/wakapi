@@ -141,7 +141,7 @@ func (h *SummaryHandler) GetIndex(w http.ResponseWriter, r *http.Request) {
 
 	vm := view.SummaryViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
 			User:            user,
 		},
 		AvailableFilters:    availableFilters,
@@ -166,7 +166,7 @@ func (h *SummaryHandler) buildViewModel(r *http.Request, w http.ResponseWriter) 
 	return su.WithSessionMessages(&view.SummaryViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
 			User:            user,
-			SharedViewModel: view.NewSharedViewModel(h.config, nil),
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
 		},
 	}, r, w)
 }
