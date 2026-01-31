@@ -93,6 +93,8 @@ let icons = [
     'devicon-plain:facebook',
     'mdi:microsoft',
     'twemoji:flag-germany',
+    'twemoji:flag-brazil',
+    'twemoji:flag-united-states',
     'ic:round-download',
     'ic:outline-integration-instructions',
     'ri:admin-fill',

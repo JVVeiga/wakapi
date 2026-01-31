@@ -82,9 +82,12 @@
 
     <div class="grow"></div>
 
-    <a href="lang?lang={{ if eq .Language "pt-BR" }}en{{ else }}pt-BR{{ end }}" class="flex items-center space-x-1 p-1 rounded hover:bg-primary-hover text-sm" title="{{ if eq .Language "pt-BR" }}{{ .T "common.switch_to_english" }}{{ else }}{{ .T "common.switch_to_portuguese" }}{{ end }}">
-        <span class="iconify inline" data-icon="mdi:translate" style="width: 18px; height: 18px"></span>
-        <span>{{ if eq .Language "pt-BR" }}EN{{ else }}PT{{ end }}</span>
+    <a href="lang?lang={{ if eq .Language "pt-BR" }}en{{ else }}pt-BR{{ end }}" class="flex items-center p-1 rounded hover:bg-primary-hover" title="{{ if eq .Language "pt-BR" }}{{ .T "common.switch_to_english" }}{{ else }}{{ .T "common.switch_to_portuguese" }}{{ end }}">
+        {{ if eq .Language "pt-BR" }}
+        <span class="iconify inline" data-icon="twemoji:flag-united-states" style="width: 24px; height: 24px"></span>
+        {{ else }}
+        <span class="iconify inline" data-icon="twemoji:flag-brazil" style="width: 24px; height: 24px"></span>
+        {{ end }}
     </a>
 
     <div class="shrink-0 menu-item relative" @click="state.showDropdownUser = !state.showDropdownUser" data-trigger-for="showDropdownUser">
