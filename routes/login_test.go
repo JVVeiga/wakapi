@@ -18,6 +18,7 @@ import (
 	"github.com/muety/wakapi/models"
 	routeutils "github.com/muety/wakapi/routes/utils"
 	"github.com/muety/wakapi/utils"
+	"github.com/muety/wakapi/views/i18n"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -91,6 +92,7 @@ func (suite *LoginHandlerTestSuite) BeforeTest(suiteName, testName string) {
 	suite.KeyValueService = new(mocks.KeyValueServiceMock)
 
 	cfg := config.Empty()
+	cfg.App.DefaultLanguage = "en"
 	cfg.Security.SecureCookie = securecookie.New(
 		securecookie.GenerateRandomKey(64),
 		securecookie.GenerateRandomKey(32),
@@ -98,6 +100,8 @@ func (suite *LoginHandlerTestSuite) BeforeTest(suiteName, testName string) {
 	cfg.Security.PasswordSalt = testPasswordSalt
 	config.Set(cfg)
 	suite.Cfg = cfg
+
+	i18n.Init(i18n.TranslationFiles, "en")
 
 	suite.resetOidcMockTtl()
 	suite.setupOidcProvider(testProvider)
@@ -359,7 +363,7 @@ func (suite *LoginHandlerTestSuite) TestPostSignup_InvalidForm() {
 
 	suite.UserService.AssertExpectations(suite.T())
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
-	assert.Contains(suite.T(), string(body), "User name is invalid")
+	assert.Contains(suite.T(), string(body), "Invalid username")
 }
 
 func (suite *LoginHandlerTestSuite) TestPostSignup_ExistingUser() {
@@ -452,7 +456,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLogin_NoMatchingProvider() {
 
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
 	assert.Equal(suite.T(), "/login", w.Header().Get("Location"))
-	assert.Equal(suite.T(), "oidc provider \"mock2\" not registered", suite.getSessionError(r))
+	assert.Equal(suite.T(), "OIDC provider \"mock2\" not registered", suite.getSessionError(r))
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_Success() {
@@ -523,7 +527,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_SignupDisabled() {
 
 	suite.UserService.AssertExpectations(suite.T())
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
-	assert.Equal(suite.T(), "registration is disabled on this server", suite.getSessionError(r))
+	assert.Equal(suite.T(), "Registration is disabled on this server", suite.getSessionError(r))
 	assert.Equal(suite.T(), "/login", w.Header().Get("Location"))
 	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
 }
@@ -539,7 +543,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_InvalidState() {
 	suite.Sut.GetOidcCallback(w, r)
 
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
-	assert.Equal(suite.T(), "suspicious operation, got invalid state in oidc callback", suite.getSessionError(r))
+	assert.Equal(suite.T(), "Suspicious operation, got invalid state in OIDC callback", suite.getSessionError(r))
 	assert.Equal(suite.T(), "/login", w.Header().Get("Location"))
 	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
 }
@@ -559,7 +563,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_AuthExchangeFailure
 	suite.Sut.GetOidcCallback(w, r)
 
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
-	assert.Equal(suite.T(), "failed to exchange authorization code for access token", suite.getSessionError(r))
+	assert.Equal(suite.T(), "Failed to exchange authorization code for access token", suite.getSessionError(r))
 	assert.Equal(suite.T(), "/login", w.Header().Get("Location"))
 	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
 }
@@ -577,7 +581,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_IdTokenExpired() {
 	suite.Sut.GetOidcCallback(w, r)
 
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
-	assert.Equal(suite.T(), "failed to verify and decode id_token", suite.getSessionError(r))
+	assert.Equal(suite.T(), "Failed to verify and decode id_token", suite.getSessionError(r))
 	assert.Equal(suite.T(), "/login", w.Header().Get("Location"))
 	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
 }
@@ -591,7 +595,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_NoMatchingProvider(
 
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
 	assert.Equal(suite.T(), "/login", w.Header().Get("Location"))
-	assert.Equal(suite.T(), "oidc provider \"mock2\" not registered", suite.getSessionError(r))
+	assert.Equal(suite.T(), "OIDC provider \"mock2\" not registered", suite.getSessionError(r))
 }
 
 // Private utility methods

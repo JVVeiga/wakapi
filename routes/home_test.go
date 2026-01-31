@@ -7,7 +7,6 @@ import (
 	"github.com/muety/wakapi/mocks"
 	"github.com/muety/wakapi/models"
 	"github.com/stretchr/testify/assert"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -36,19 +35,14 @@ func TestHomeHandler_Get_NotLoggedIn(t *testing.T) {
 	router.Use(middlewares.NewSharedDataMiddleware())
 
 	userServiceMock := new(mocks.UserServiceMock)
-	userServiceMock.On("GetUserById", user1.ID).Return(&user1, nil)
-	userServiceMock.On("CountCurrentlyOnline").Return(0, nil)
 
 	keyValueServiceMock := new(mocks.KeyValueServiceMock)
-	keyValueServiceMock.On("GetString", config.KeyLatestTotalTime).Return(&models.KeyStringValue{Key: config.KeyLatestTotalTime, Value: "0"}, nil)
-	keyValueServiceMock.On("GetString", config.KeyLatestTotalUsers).Return(&models.KeyStringValue{Key: config.KeyLatestTotalUsers, Value: "0"}, nil)
-	keyValueServiceMock.On("GetString", config.KeyNewsbox).Return(&models.KeyStringValue{Key: config.KeyNewsbox, Value: ""}, nil)
 
 	homeHandler := NewHomeHandler(userServiceMock, keyValueServiceMock)
 	homeHandler.RegisterRoutes(router)
 
 	t.Run("when requesting frontpage", func(t *testing.T) {
-		t.Run("should display it without authentication", func(t *testing.T) {
+		t.Run("should redirect to login without authentication", func(t *testing.T) {
 			rec := httptest.NewRecorder()
 
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -57,15 +51,8 @@ func TestHomeHandler_Get_NotLoggedIn(t *testing.T) {
 			res := rec.Result()
 			defer res.Body.Close()
 
-			assert.Equal(t, http.StatusOK, res.StatusCode)
-
-			data, err := io.ReadAll(res.Body)
-			if err != nil {
-				t.Errorf("unextected error. Error: %s", err)
-			}
-
-			assert.Contains(t, string(data), "<a href=\"login\" class=\"btn-primary\">")
-			keyValueServiceMock.AssertNumberOfCalls(t, "GetString", 3)
+			assert.Equal(t, http.StatusFound, res.StatusCode)
+			assert.Equal(t, "/login", res.Header.Get("Location"))
 		})
 	})
 }

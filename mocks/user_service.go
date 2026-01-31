@@ -152,6 +152,11 @@ func (m *UserServiceMock) SetAdmin(user *models.User, isAdmin bool) (*models.Use
 	return args.Get(0).(*models.User), args.Error(1)
 }
 
+func (m *UserServiceMock) LinkOidc(user *models.User, provider, sub string) error {
+	args := m.Called(user, provider, sub)
+	return args.Error(0)
+}
+
 func (m *UserServiceMock) FlushCache() {
 	m.Called()
 }
