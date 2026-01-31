@@ -36,6 +36,7 @@ Montadas em `rootRouter` com `SecurityMiddleware` (headers CSP, X-Frame-Options)
 | GET | `/imprint` | ImprintHandler.GetImprint | Não | Impressum legal |
 | GET | `/setup` | SetupHandler.GetIndex | Opcional | Onboarding |
 | GET | `/unsubscribe` | MiscHandler.GetUnsubscribe | Não | Desinscrever de e-mails |
+| GET | `/lang` | LanguageHandler.GetSwitch | Não | Trocar idioma (seta cookie + atualiza User.Language se logado) |
 | GET | `/teams` | TeamsHandler.GetIndex | Sim (redirect) | Lista de times do usuário |
 | GET | `/teams/{id}` | TeamsHandler.GetTeamDetail | Sim (membro) | Detalhe do time com métricas agregadas |
 | GET | `/teams/{id}/members/{userID}` | TeamsHandler.GetMemberSummary | Sim (owner/admin) | Dashboard individual de um membro do time |

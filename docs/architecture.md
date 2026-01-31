@@ -132,6 +132,9 @@ wakapi/
 ├── static/                      # Assets embeddados (CSS, JS, imagens)
 │   └── docs/                    # Swagger (swagger.yaml, swagger.json)
 └── views/                       # Templates HTML (.tpl.html)
+    └── i18n/                    # Arquivos de tradução (JSON)
+        ├── en.json              # Inglês (idioma padrão)
+        └── pt-BR.json           # Português do Brasil
 ```
 
 ## Fluxo de Boot (main.go)
@@ -240,3 +243,4 @@ wakapi/
 | Métricas | Prometheus (formato texto) |
 | API Docs | Swagger/OpenAPI (swaggo) |
 | Assets | go:embed (estáticos embeddados) |
+| i18n | JSON translation files com `.T` template function e `i18n.Translate()` para flash messages nos route handlers |

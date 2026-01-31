@@ -46,6 +46,7 @@ O Wakapi lê configuração de `config.yml` (padrão) ou do path especificado vi
 | `max_inactive_months` | int | -1 | WAKAPI_MAX_INACTIVE_MONTHS |
 | `warm_caches` | bool | true | WAKAPI_WARM_CACHES |
 | `custom_languages` | map | — | — |
+| `default_language` | string | pt-BR | WAKAPI_DEFAULT_LANGUAGE | Idioma padrão da interface (pt-BR ou en) |
 | `date_format` | string | Mon, 02 Jan 2006 | WAKAPI_DATE_FORMAT |
 | `datetime_format` | string | Mon, 02 Jan 2006 15:04 | WAKAPI_DATETIME_FORMAT |
 

@@ -35,6 +35,7 @@ Entidade principal do sistema. Armazena dados de autenticação, perfil e prefer
 - `PublicLeaderboard` (bool) — participar do leaderboard
 - `AuthType` (string, default: "local") — tipo de auth (local/oidc)
 - `HeartbeatsTimeoutSec` (int, default: 600) — timeout entre heartbeats
+- `Language` (string, default: "pt-BR") — idioma preferido da interface (pt-BR ou en)
 
 ### Heartbeat (`models/heartbeat.go`)
 
