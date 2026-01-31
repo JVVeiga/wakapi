@@ -39,6 +39,7 @@ import (
 	"github.com/muety/wakapi/services/mail"
 	"github.com/muety/wakapi/static/docs"
 	fsutils "github.com/muety/wakapi/utils/fs"
+	i18n "github.com/muety/wakapi/views/i18n"
 )
 
 // Embed version.txt
@@ -124,6 +125,11 @@ func main() {
 		os.Exit(0)
 	}
 	config = conf.Load(*configFlag, version)
+
+	// Initialize i18n
+	if err := i18n.Init(i18n.TranslationFiles, config.App.DefaultLanguage); err != nil {
+		conf.Log().Fatal("failed to initialize i18n", "error", err)
+	}
 
 	// Configure Swagger docs
 	docs.SwaggerInfo.BasePath = config.Server.BasePath + "/api"
@@ -256,6 +262,7 @@ func main() {
 	adminHandler := routes.NewAdminHandler(userService, heartbeatService, summaryService, apiKeyService, teamService)
 	teamsHandler := routes.NewTeamsHandler(userService, teamService, summaryService, heartbeatService, durationService, aliasService)
 	miscHandler := routes.NewMiscHandler(userService)
+	langHandler := routes.NewLanguageHandler(userService)
 
 	// Other Handlers
 	relayHandler := relay.NewRelayHandler()
@@ -304,6 +311,7 @@ func main() {
 	miscHandler.RegisterRoutes(rootRouter)
 	adminHandler.RegisterRoutes(rootRouter)
 	teamsHandler.RegisterRoutes(rootRouter)
+	langHandler.RegisterRoutes(rootRouter)
 
 	// API route registrations
 	rootApiHandler.RegisterRoutes(apiRouter)

@@ -62,6 +62,8 @@ app:
   # defaults to wakapi's internal avatar rendering powered by https://codeberg.org/Codeberg/avatars
   avatar_url_template: api/avatar/{username_hash}.svg
 
+  default_language: pt-BR                                   # default interface language (pt-BR or en)
+
   # go time format strings to format human-readable dates
   # for details, check https://pkg.go.dev/time#Time.Format
   date_format: Mon, 02 Jan 2006

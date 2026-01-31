@@ -112,6 +112,7 @@ type appConfig struct {
 	DateTimeFormat            string                       `yaml:"datetime_format" default:"Mon, 02 Jan 2006 15:04" env:"WAKAPI_DATETIME_FORMAT"`
 	CustomLanguages           map[string]string            `yaml:"custom_languages"`
 	CanonicalLanguageNames    map[string]string            `yaml:"canonical_language_names"` // lower case, compacted representation -> canonical name
+	DefaultLanguage           string                       `yaml:"default_language" default:"pt-BR" env:"WAKAPI_DEFAULT_LANGUAGE"`
 	Colors                    map[string]map[string]string `yaml:"-"`
 }
 
