@@ -388,6 +388,9 @@
 
   "alerts.error": "Erro:",
 
+  "teams.title": "Meus Times",
+  "teams.no_teams": "Você ainda não faz parte de nenhum time.",
+
   "team_detail.total_time": "Tempo Total",
   "team_detail.top_language": "Linguagem Principal",
   "team_detail.top_project": "Projeto Principal",
@@ -400,6 +403,7 @@
   "team_detail.member_activity": "Atividade dos Membros",
   "team_detail.remove_member": "Remover membro",
   "team_detail.confirm_remove_member": "Tem certeza que deseja remover este membro do time?",
+  "team_detail.role_owner": "dono",
 
   "flash.not_team_owner": "Apenas o dono do time pode realizar esta ação",
 

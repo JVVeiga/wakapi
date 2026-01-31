@@ -117,7 +117,7 @@
                     <span class="text-foreground font-semibold font-mono truncate">{{ .UserID }}</span>
                     {{ end }}
                     {{ if eq .Role "owner" }}
-                    <span class="ml-2 text-xs bg-primary text-white px-1.5 py-0.5 rounded">owner</span>
+                    <span class="ml-2 text-xs bg-primary text-white px-1.5 py-0.5 rounded">{{ $.T "team_detail.role_owner" }}</span>
                     {{ end }}
                 </div>
                 <div class="flex items-center gap-3">

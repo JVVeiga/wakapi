@@ -388,6 +388,9 @@
 
   "alerts.error": "Error:",
 
+  "teams.title": "My Teams",
+  "teams.no_teams": "You are not a member of any teams yet.",
+
   "team_detail.total_time": "Total Time",
   "team_detail.top_language": "Top Language",
   "team_detail.top_project": "Top Project",
@@ -400,6 +403,7 @@
   "team_detail.member_activity": "Member Activity",
   "team_detail.remove_member": "Remove member",
   "team_detail.confirm_remove_member": "Are you sure you want to remove this member from the team?",
+  "team_detail.role_owner": "owner",
 
   "flash.not_team_owner": "Only team owners can perform this action",
 
