@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -62,7 +63,11 @@ func (h *TeamsHandler) RegisterRoutes(router chi.Router) {
 
 	r.Use(authMiddleware.Handler)
 	r.Get("/", h.GetIndex)
+	r.Get("/invite/{code}", h.GetAcceptInvite)
+	r.Post("/invite/{code}", h.PostAcceptInvite)
 	r.Get("/{id}", h.GetTeamDetail)
+	r.Get("/{id}/invites", h.GetTeamInvites)
+	r.Post("/{id}/invites", h.PostGenerateInvite)
 	r.Get("/{id}/members/{userID}", h.GetMemberSummary)
 	r.Post("/{id}/members/remove", h.PostRemoveMember)
 
@@ -212,7 +217,7 @@ func (h *TeamsHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 		MemberSummaries: memberTotals,
 		From:            from,
 		To:              to,
-		IntervalLabel:   "Last 7 days",
+		IntervalLabel:   i18n.Translate(lang, "team_detail.last_7_days"),
 		IsOwner:         isOwner,
 	}
 
@@ -425,6 +430,172 @@ func (h *TeamsHandler) PostRemoveMember(w http.ResponseWriter, r *http.Request) 
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
+}
+
+func (h *TeamsHandler) GetTeamInvites(w http.ResponseWriter, r *http.Request) {
+	if h.config.IsDev() {
+		loadTemplates()
+	}
+
+	user := middlewares.GetPrincipal(r)
+	teamID := strings.TrimSpace(chi.URLParam(r, "id"))
+	lang := routeutils.ResolveLanguage(r, user)
+
+	team, err := h.teamSrvc.GetByID(teamID)
+	if err != nil {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.team_not_found"))
+		http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	isOwner, _ := h.teamSrvc.IsTeamOwner(teamID, user.ID)
+	if !user.IsAdmin && !isOwner {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_team_owner"))
+		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
+		return
+	}
+
+	page := 1
+	if p := r.URL.Query().Get("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+
+	invites, totalPages, err := h.teamSrvc.GetInvites(teamID, page)
+	if err != nil {
+		invites = []*models.TeamInvite{}
+	}
+
+	vm := &view.TeamInvitesViewModel{
+		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
+			User:            user,
+		},
+		Team:       team,
+		Invites:    invites,
+		Page:       page,
+		TotalPages: int(totalPages),
+		IsOwner:    isOwner,
+	}
+
+	if err := templates[conf.TeamInvitesTemplate].Execute(w, routeutils.WithSessionMessages(vm, r, w)); err != nil {
+		conf.Log().Request(r).Error("failed to render team invites page", "error", err)
+	}
+}
+
+func (h *TeamsHandler) PostGenerateInvite(w http.ResponseWriter, r *http.Request) {
+	user := middlewares.GetPrincipal(r)
+	teamID := strings.TrimSpace(chi.URLParam(r, "id"))
+	lang := routeutils.ResolveLanguage(r, user)
+
+	isOwner, _ := h.teamSrvc.IsTeamOwner(teamID, user.ID)
+	if !user.IsAdmin && !isOwner {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_team_owner"))
+		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
+		return
+	}
+
+	team, err := h.teamSrvc.GetByID(teamID)
+	if err != nil {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.team_not_found"))
+		http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	invite, err := h.teamSrvc.GenerateInvite(teamID, user.ID)
+	if err != nil {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.invite_generation_failed"))
+		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s/invites", h.config.Server.BasePath, teamID), http.StatusFound)
+		return
+	}
+
+	inviteURL := fmt.Sprintf("%s/teams/invite/%s", h.config.Server.PublicUrl, invite.Code)
+
+	invites, totalPages, _ := h.teamSrvc.GetInvites(teamID, 1)
+
+	vm := &view.TeamInvitesViewModel{
+		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
+			User:            user,
+		},
+		Team:       team,
+		Invites:    invites,
+		NewInvite:  invite,
+		InviteURL:  inviteURL,
+		Page:       1,
+		TotalPages: int(totalPages),
+		IsOwner:    isOwner,
+	}
+
+	if err := templates[conf.TeamInvitesTemplate].Execute(w, routeutils.WithSessionMessages(vm, r, w)); err != nil {
+		conf.Log().Request(r).Error("failed to render team invites page", "error", err)
+	}
+}
+
+func (h *TeamsHandler) GetAcceptInvite(w http.ResponseWriter, r *http.Request) {
+	if h.config.IsDev() {
+		loadTemplates()
+	}
+
+	user := middlewares.GetPrincipal(r)
+	code := strings.TrimSpace(chi.URLParam(r, "code"))
+	lang := routeutils.ResolveLanguage(r, user)
+
+	invite, err := h.teamSrvc.GetInviteByCode(code)
+	if err != nil || invite.IsExpired() || invite.IsUsed() {
+		routeutils.SetError(r, w, i18n.Translate(lang, "invite.invalid"))
+		http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	alreadyMember, _ := h.teamSrvc.IsTeamMember(invite.TeamID, user.ID)
+	memberCount, _ := h.teamSrvc.CountMembers(invite.TeamID)
+
+	vm := &view.TeamInviteAcceptViewModel{
+		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
+			User:            user,
+		},
+		Team:          invite.Team,
+		Invite:        invite,
+		MemberCount:   memberCount,
+		AlreadyMember: alreadyMember,
+	}
+
+	if err := templates[conf.TeamInviteAcceptTemplate].Execute(w, routeutils.WithSessionMessages(vm, r, w)); err != nil {
+		conf.Log().Request(r).Error("failed to render invite accept page", "error", err)
+	}
+}
+
+func (h *TeamsHandler) PostAcceptInvite(w http.ResponseWriter, r *http.Request) {
+	user := middlewares.GetPrincipal(r)
+	code := strings.TrimSpace(chi.URLParam(r, "code"))
+	lang := routeutils.ResolveLanguage(r, user)
+
+	team, err := h.teamSrvc.AcceptInvite(code, user.ID)
+	if err != nil {
+		msg := err.Error()
+		switch msg {
+		case "already a member":
+			routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.already_team_member"))
+			if team != nil {
+				http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, team.ID), http.StatusFound)
+				return
+			}
+		case "invite expired":
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.invite_expired"))
+		case "invite already used":
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.invite_already_used"))
+		default:
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.invite_accept_failed"))
+		}
+		http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	routeutils.SetSuccess(r, w, i18n.Translate(lang, "invite.accepted"))
+	http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, team.ID), http.StatusFound)
 }
 
 func (h *TeamsHandler) extractAvailableFilters(summary *models.Summary) view.AvailableFilters {

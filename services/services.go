@@ -201,4 +201,8 @@ type ITeamService interface {
 	CountMembers(string) (int64, error)
 	IsTeamOwner(string, string) (bool, error)
 	IsTeamMember(string, string) (bool, error)
+	GenerateInvite(string, string) (*models.TeamInvite, error)
+	AcceptInvite(string, string) (*models.Team, error)
+	GetInvites(string, int) ([]*models.TeamInvite, int64, error)
+	GetInviteByCode(string) (*models.TeamInvite, error)
 }

@@ -18,4 +18,6 @@ const (
 	AdminTeamDetailTemplate   = "admin-team-detail.tpl.html"
 	TeamsTemplate             = "teams.tpl.html"
 	TeamDetailTemplate        = "team-detail.tpl.html"
+	TeamInvitesTemplate       = "team-invites.tpl.html"
+	TeamInviteAcceptTemplate  = "team-invite-accept.tpl.html"
 )

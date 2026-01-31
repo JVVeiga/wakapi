@@ -434,6 +434,9 @@ func createSchema() error {
 	if err := dbTarget.AutoMigrate(&models.TeamLeaderboardItem{}); err != nil {
 		return err
 	}
+	if err := dbTarget.AutoMigrate(&models.TeamInvite{}); err != nil {
+		return err
+	}
 	return nil
 }
 

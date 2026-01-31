@@ -29,3 +29,22 @@ type TeamDetailViewModel struct {
 	IntervalLabel   string
 	IsOwner         bool
 }
+
+type TeamInvitesViewModel struct {
+	SharedLoggedInViewModel
+	Team       *models.Team
+	Invites    []*models.TeamInvite
+	NewInvite  *models.TeamInvite
+	InviteURL  string
+	Page       int
+	TotalPages int
+	IsOwner    bool
+}
+
+type TeamInviteAcceptViewModel struct {
+	SharedLoggedInViewModel
+	Team          *models.Team
+	Invite        *models.TeamInvite
+	MemberCount   int64
+	AlreadyMember bool
+}

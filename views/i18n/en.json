@@ -404,6 +404,7 @@
   "team_detail.remove_member": "Remove member",
   "team_detail.confirm_remove_member": "Are you sure you want to remove this member from the team?",
   "team_detail.role_owner": "owner",
+  "team_detail.last_7_days": "Last 7 days",
 
   "flash.not_team_owner": "Only team owners can perform this action",
 
@@ -610,5 +611,31 @@
   "flash.oidc_invalid_state": "Suspicious operation, got invalid state in OIDC callback",
   "flash.oidc_exchange_failed": "Failed to exchange authorization code for access token",
   "flash.oidc_id_token_failed": "Failed to extract id_token",
-  "flash.oidc_verify_failed": "Failed to verify and decode id_token"
+  "flash.oidc_verify_failed": "Failed to verify and decode id_token",
+
+  "invite.title": "Team Invites",
+  "invite.generate": "Generate Invite",
+  "invite.link_generated": "Invite link generated! Copy and share:",
+  "invite.copy_link": "Copy Link",
+  "invite.history": "Invite History",
+  "invite.created_by": "Created by",
+  "invite.status_active": "Active",
+  "invite.status_expired": "Expired",
+  "invite.status_used": "Used by",
+  "invite.expires_in": "Expires in",
+  "invite.expired_ago": "Expired",
+  "invite.no_invites": "No invites generated yet.",
+  "invite.accept_title": "Team Invite",
+  "invite.accept_info": "You've been invited to join:",
+  "invite.accept_button": "Accept Invite",
+  "invite.already_member": "You are already a member of this team.",
+  "invite.go_to_team": "Go to Team",
+  "invite.invalid": "This invite link is invalid or has expired.",
+  "invite.accepted": "You have joined the team!",
+  "flash.invite_link_generated": "Invite link generated successfully",
+  "flash.invite_generation_failed": "Failed to generate invite",
+  "flash.invite_accept_failed": "Failed to accept invite",
+  "flash.invite_already_used": "This invite has already been used",
+  "flash.invite_expired": "This invite has expired",
+  "flash.already_team_member": "You are already a member of this team"
 }

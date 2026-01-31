@@ -76,6 +76,9 @@ func GetMigrationFunc(cfg *config.Config) GormMigrationFunc {
 			if err := db.AutoMigrate(&models.TeamLeaderboardItem{}); err != nil && !cfg.Db.AutoMigrateFailSilently {
 				return err
 			}
+			if err := db.AutoMigrate(&models.TeamInvite{}); err != nil && !cfg.Db.AutoMigrateFailSilently {
+				return err
+			}
 			return nil
 		}
 	}

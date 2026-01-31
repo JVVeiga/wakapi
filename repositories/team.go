@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+	"time"
 
 	"github.com/muety/wakapi/config"
 	"github.com/muety/wakapi/models"
@@ -174,4 +175,52 @@ func (r *TeamRepository) CountByTeam(teamID string) (int64, error) {
 		Where("team_id = ?", teamID).
 		Count(&count).Error
 	return count, err
+}
+
+func (r *TeamRepository) CreateInvite(invite *models.TeamInvite) (*models.TeamInvite, error) {
+	if err := r.db.Create(invite).Error; err != nil {
+		return nil, err
+	}
+	return invite, nil
+}
+
+func (r *TeamRepository) GetInviteByCode(code string) (*models.TeamInvite, error) {
+	var invite models.TeamInvite
+	if err := r.db.
+		Preload("Team").
+		Preload("Creator").
+		Where("code = ?", code).
+		First(&invite).Error; err != nil {
+		return nil, err
+	}
+	return &invite, nil
+}
+
+func (r *TeamRepository) GetInvitesByTeam(teamID string, page, pageSize int) ([]*models.TeamInvite, int64, error) {
+	var invites []*models.TeamInvite
+	var total int64
+
+	r.db.Model(&models.TeamInvite{}).Where("team_id = ?", teamID).Count(&total)
+
+	if err := r.db.
+		Where("team_id = ?", teamID).
+		Preload("Creator").
+		Order("created_at DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&invites).Error; err != nil {
+		return nil, 0, err
+	}
+	return invites, total, nil
+}
+
+func (r *TeamRepository) MarkInviteUsed(code string, userID string) error {
+	now := models.CustomTime(time.Now())
+	return r.db.
+		Model(&models.TeamInvite{}).
+		Where("code = ?", code).
+		Updates(map[string]interface{}{
+			"used_by": userID,
+			"used_at": now,
+		}).Error
 }

@@ -16,7 +16,8 @@ User (Entidade Principal)
 └── Diagnostics (sem FK direta)
 
 Team
-└── TeamLeaderboardItem (1:N) — por TeamID, pré-computado via cron
+├── TeamLeaderboardItem (1:N) — por TeamID, pré-computado via cron
+└── TeamInvite (1:N) — convites de uso único com expiração
 ```
 
 ## Entidades
@@ -152,6 +153,21 @@ Entrada pré-computada do leaderboard de times. Derivada dos `leaderboard_items`
 
 Unique index: `idx_team_lb_combined` (TeamID, Interval)
 
+### TeamInvite (`models/team_invite.go`)
+
+Link de convite para entrar em um time. Uso único, com expiração de 2 horas.
+
+- `ID` (uint, PK)
+- `Code` (string, unique) — UUID do convite
+- `TeamID` (string, FK → Team) — time alvo
+- `CreatedBy` (string, FK → User) — quem gerou o convite
+- `UsedBy` (*string) — quem usou (nil = não usado)
+- `UsedAt` (*CustomTime) — quando foi usado
+- `ExpiresAt` (CustomTime) — data de expiração
+- `CreatedAt` (CustomTime) — data de criação
+
+Status derivado em runtime: `IsUsed()`, `IsExpired()`, `Status()` → "active" / "expired" / "used"
+
 ### KeyStringValue (`models/shared.go`)
 
 Store key-value genérico para estado da aplicação.
@@ -180,3 +196,4 @@ Wrapper sobre `time.Time` que suporta unmarshalling de timestamps Python (format
 | ProjectLabel | `idx_project_label_user` |
 | LeaderboardItem | `idx_leaderboard_user`, `idx_leaderboard_combined` |
 | TeamLeaderboardItem | `idx_team_lb_combined` (TeamID, Interval) |
+| TeamInvite | uniqueIndex (Code), index (TeamID) |

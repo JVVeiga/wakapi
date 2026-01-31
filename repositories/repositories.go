@@ -176,4 +176,8 @@ type ITeamRepository interface {
 	RemoveMember(string, string) error
 	TransferOwnership(string, string) error
 	CountByTeam(string) (int64, error)
+	CreateInvite(*models.TeamInvite) (*models.TeamInvite, error)
+	GetInviteByCode(string) (*models.TeamInvite, error)
+	GetInvitesByTeam(string, int, int) ([]*models.TeamInvite, int64, error)
+	MarkInviteUsed(string, string) error
 }

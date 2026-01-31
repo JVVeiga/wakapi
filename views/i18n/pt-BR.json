@@ -404,6 +404,7 @@
   "team_detail.remove_member": "Remover membro",
   "team_detail.confirm_remove_member": "Tem certeza que deseja remover este membro do time?",
   "team_detail.role_owner": "dono",
+  "team_detail.last_7_days": "Últimos 7 dias",
 
   "flash.not_team_owner": "Apenas o dono do time pode realizar esta ação",
 
@@ -610,5 +611,31 @@
   "flash.oidc_invalid_state": "Operação suspeita, estado inválido no callback OIDC",
   "flash.oidc_exchange_failed": "Falha ao trocar código de autorização por token de acesso",
   "flash.oidc_id_token_failed": "Falha ao extrair id_token",
-  "flash.oidc_verify_failed": "Falha ao verificar e decodificar id_token"
+  "flash.oidc_verify_failed": "Falha ao verificar e decodificar id_token",
+
+  "invite.title": "Convites do Time",
+  "invite.generate": "Gerar Convite",
+  "invite.link_generated": "Link de convite gerado! Copie e compartilhe:",
+  "invite.copy_link": "Copiar Link",
+  "invite.history": "Histórico de Convites",
+  "invite.created_by": "Criado por",
+  "invite.status_active": "Ativo",
+  "invite.status_expired": "Expirado",
+  "invite.status_used": "Usado por",
+  "invite.expires_in": "Expira em",
+  "invite.expired_ago": "Expirado",
+  "invite.no_invites": "Nenhum convite gerado ainda.",
+  "invite.accept_title": "Convite de Time",
+  "invite.accept_info": "Você foi convidado para entrar em:",
+  "invite.accept_button": "Aceitar Convite",
+  "invite.already_member": "Você já faz parte deste time.",
+  "invite.go_to_team": "Ir para o Time",
+  "invite.invalid": "Este link de convite é inválido ou expirou.",
+  "invite.accepted": "Você entrou no time!",
+  "flash.invite_link_generated": "Link de convite gerado com sucesso",
+  "flash.invite_generation_failed": "Falha ao gerar convite",
+  "flash.invite_accept_failed": "Falha ao aceitar convite",
+  "flash.invite_already_used": "Este convite já foi utilizado",
+  "flash.invite_expired": "Este convite expirou",
+  "flash.already_team_member": "Você já faz parte deste time"
 }

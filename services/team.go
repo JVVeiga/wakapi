@@ -3,9 +3,11 @@ package services
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
+	"github.com/gofrs/uuid/v5"
 	"github.com/patrickmn/go-cache"
 
 	"github.com/muety/wakapi/config"
@@ -215,4 +217,75 @@ func (srv *TeamService) invalidateByPrefix(prefix string) {
 			srv.cache.Delete(k)
 		}
 	}
+}
+
+const invitePageSize = 5
+
+func (srv *TeamService) GenerateInvite(teamID, creatorID string) (*models.TeamInvite, error) {
+	code := uuid.Must(uuid.NewV4()).String()
+	now := models.CustomTime(time.Now())
+	expiresAt := models.CustomTime(time.Now().Add(2 * time.Hour))
+
+	invite := &models.TeamInvite{
+		Code:      code,
+		TeamID:    teamID,
+		CreatedBy: creatorID,
+		ExpiresAt: expiresAt,
+		CreatedAt: now,
+	}
+
+	return srv.repository.CreateInvite(invite)
+}
+
+func (srv *TeamService) AcceptInvite(code, userID string) (*models.Team, error) {
+	invite, err := srv.repository.GetInviteByCode(code)
+	if err != nil {
+		return nil, errors.New("invite not found")
+	}
+
+	if invite.IsUsed() {
+		return nil, errors.New("invite already used")
+	}
+
+	if invite.IsExpired() {
+		return nil, errors.New("invite expired")
+	}
+
+	// Check if already a member
+	isMember, _ := srv.IsTeamMember(invite.TeamID, userID)
+	if isMember {
+		return invite.Team, errors.New("already a member")
+	}
+
+	// Add as member
+	member := &models.TeamMember{
+		TeamID: invite.TeamID,
+		UserID: userID,
+		Role:   models.TeamRoleMember,
+	}
+	if _, err := srv.repository.AddMember(member); err != nil {
+		return nil, err
+	}
+
+	// Mark invite as used
+	if err := srv.repository.MarkInviteUsed(code, userID); err != nil {
+		return nil, err
+	}
+
+	srv.invalidateTeam(invite.TeamID)
+	srv.invalidateUserTeams(userID)
+
+	return invite.Team, nil
+}
+
+func (srv *TeamService) GetInvites(teamID string, page int) ([]*models.TeamInvite, int64, error) {
+	invites, total, err := srv.repository.GetInvitesByTeam(teamID, page, invitePageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	return invites, int64(math.Ceil(float64(total) / float64(invitePageSize))), nil
+}
+
+func (srv *TeamService) GetInviteByCode(code string) (*models.TeamInvite, error) {
+	return srv.repository.GetInviteByCode(code)
 }

@@ -15,7 +15,12 @@
                 <a href="teams" class="text-primary hover:underline mr-4">&larr; {{ .T "common.back" }}</a>
                 <h1 class="h1">{{ .Team.Name }}</h1>
             </div>
-            <span class="text-sm text-muted">{{ .IntervalLabel }}</span>
+            <div class="flex items-center gap-3">
+                {{ if or .IsOwner .SharedLoggedInViewModel.User.IsAdmin }}
+                <a href="teams/{{ .Team.ID }}/invites" class="btn-primary text-sm">{{ .T "invite.title" }}</a>
+                {{ end }}
+                <span class="text-sm text-muted">{{ .IntervalLabel }}</span>
+            </div>
         </div>
 
         {{ if .Team.Description }}
