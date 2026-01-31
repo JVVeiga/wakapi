@@ -10,6 +10,14 @@
     const userTzOffset = {{ localTZOffset.Hours }}
     const signPrefix = userTzOffset >= 0 ? '+' : ''
     const defaultTzOption = { value: 'Local', text: `Local server time (UTC${signPrefix}${userTzOffset})` }
+
+    const wakapiI18n = {
+        confirmCannotUndo: '{{ .T "confirm.cannot_be_undone" }}',
+        confirmSure: '{{ .T "confirm.are_you_sure" }}',
+        confirmImport: '{{ .T "confirm.import_no_undo" }}',
+        confirmClearData: '{{ .T "confirm.clear_data" }}',
+        confirmDeleteAccount: '{{ .T "confirm.delete_account" }}',
+    }
 </script>
 <script type="module" src="assets/js/components/settings.js"></script>
 

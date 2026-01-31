@@ -82,8 +82,8 @@ function draw(subselection) {
                         : [val, lbl]
                     return ` ${d[1]}: ${d[0].toString().toHHMMSS()}`
                 },
-                title: () => 'Total Time',
-                footer: () => key === 'projects' ? 'Click for details' : null
+                title: () => wakapiData.i18n.totalTime,
+                footer: () => key === 'projects' ? wakapiData.i18n.clickDetails : null
             }
         }
     }
@@ -126,7 +126,7 @@ function draw(subselection) {
                     xAxes: {
                         title: {
                             display: true,
-                            text: 'Duration (hh:mm:ss)',
+                            text: wakapiData.i18n.durationAxis,
                         },
                         ticks: {
                             callback: (label) => label.toString().toHHMMSS(),
@@ -368,7 +368,7 @@ function draw(subselection) {
                     xAxes: {
                         title: {
                             display: true,
-                            text: 'Duration (hh:mm:ss)',
+                            text: wakapiData.i18n.durationAxis,
                         },
                         ticks: {
                             callback: (label) => label.toString().toHHMMSS(),
@@ -418,7 +418,7 @@ function draw(subselection) {
                     xAxes: {
                         title: {
                             display: true,
-                            text: 'Duration (hh:mm:ss)',
+                            text: wakapiData.i18n.durationAxis,
                         },
                         ticks: {
                             callback: (label) => label.toString().toHHMMSS(),
@@ -440,7 +440,7 @@ function draw(subselection) {
         ? new Chart(categoriesCanvas.getContext('2d'), {
             type: "bar",
             data: {
-                labels: ['Categories'],
+                labels: [wakapiData.i18n.categories],
                 datasets: wakapiData.categories
                     .slice(0, Math.min(showTopN[8], wakapiData.categories.length))
                     .map((p, i) => ({
@@ -456,7 +456,7 @@ function draw(subselection) {
                     xAxes: {
                         title: {
                             display: true,
-                            text: 'Duration (hh:mm:ss)',
+                            text: wakapiData.i18n.durationAxis,
                         },
                         ticks: {
                             callback: (label) => label.toString().toHHMMSS(),
@@ -501,14 +501,14 @@ function draw(subselection) {
                         stacked: true,
                         title: {
                             display: true,
-                            text: 'Date'
+                            text: wakapiData.i18n.date
                         }
                     },
                     y: {
                         stacked: true,
                         title: {
                             display: true,
-                            text: 'Duration (hh:mm:ss)'
+                            text: wakapiData.i18n.durationAxis
                         },
                         ticks: {
                             callback: value => value.toString().toHHMMSS()
@@ -581,14 +581,14 @@ function draw(subselection) {
                         },
                         title: {
                             display: true,
-                            text: 'Time'
+                            text: wakapiData.i18n.time
                         }
                     },
                     y: {
                         stacked: true,
                         title: {
                             display: true,
-                            text: 'Projects'
+                            text: wakapiData.i18n.projects
                         }
                     }
                 },

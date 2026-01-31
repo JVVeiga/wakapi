@@ -432,6 +432,16 @@
     wakapiData.branches = []
     wakapiData.entities = []
     {{ end }}
+
+    wakapiData.i18n = {
+        totalTime: '{{ .T "chart.total_time" }}',
+        clickDetails: '{{ .T "chart.click_details" }}',
+        durationAxis: '{{ .T "chart.duration_axis" }}',
+        categories: '{{ .T "chart.categories" }}',
+        date: '{{ .T "chart.date" }}',
+        time: '{{ .T "chart.time" }}',
+        projects: '{{ .T "chart.projects" }}',
+    }
 </script>
 <script src="assets/vendor/hammer.min.js"></script>
 <script src="assets/vendor/chartjs-plugin-zoom.min.js"></script>

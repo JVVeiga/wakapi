@@ -299,6 +299,20 @@
   "filter.category": "Category",
   "filter.category_placeholder": "Filter by category ...",
 
+  "chart.total_time": "Total Time",
+  "chart.click_details": "Click for details",
+  "chart.duration_axis": "Duration (hh:mm:ss)",
+  "chart.categories": "Categories",
+  "chart.date": "Date",
+  "chart.time": "Time",
+  "chart.projects": "Projects",
+
+  "confirm.are_you_sure": "Are you sure?",
+  "confirm.cannot_be_undone": "Are you sure? This cannot be undone.",
+  "confirm.import_no_undo": "Are you sure? The import can not be undone.",
+  "confirm.clear_data": "Are you sure? This can not be undone!",
+  "confirm.delete_account": "Are you sure? This can not be undone!",
+
   "projects.title": "Your Projects",
   "projects.description": "This is an overview of all your projects, ordered by recent activity. Color intensity indicates the overall activity on that project.",
   "projects.no_data": "No project data available, yet... Go start coding!",

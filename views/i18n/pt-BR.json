@@ -299,6 +299,20 @@
   "filter.category": "Categoria",
   "filter.category_placeholder": "Filtrar por categoria ...",
 
+  "chart.total_time": "Tempo Total",
+  "chart.click_details": "Clique para detalhes",
+  "chart.duration_axis": "Duração (hh:mm:ss)",
+  "chart.categories": "Categorias",
+  "chart.date": "Data",
+  "chart.time": "Hora",
+  "chart.projects": "Projetos",
+
+  "confirm.are_you_sure": "Tem certeza?",
+  "confirm.cannot_be_undone": "Tem certeza? Isso não pode ser desfeito.",
+  "confirm.import_no_undo": "Tem certeza? A importação não pode ser desfeita.",
+  "confirm.clear_data": "Tem certeza? Isso não pode ser desfeito!",
+  "confirm.delete_account": "Tem certeza? Isso não pode ser desfeito!",
+
   "projects.title": "Seus Projetos",
   "projects.description": "Esta é uma visão geral de todos os seus projetos, ordenados por atividade recente. A intensidade da cor indica a atividade geral naquele projeto.",
   "projects.no_data": "Nenhum dado de projeto disponível ainda... Comece a programar!",

@@ -19,29 +19,29 @@ PetiteVue.createApp({
         return this.activeTab === tab;
     },
     confirmChangeUsername() {
-        if (confirm("Are you sure? This cannot be undone.")) {
+        if (confirm(wakapiI18n.confirmCannotUndo)) {
             document.querySelector("#form-change-username").submit();
         }
     },
     confirmRegenerate() {
-        if (confirm("Are you sure?")) {
+        if (confirm(wakapiI18n.confirmSure)) {
             document.querySelector("#form-regenerate-summaries").submit();
         }
     },
     confirmWakatimeImport() {
-        if (confirm("Are you sure? The import can not be undone.")) {
+        if (confirm(wakapiI18n.confirmImport)) {
             // weird hack to sync the "legacy importer" form field from the wakatime connection form to the (invisible) import form
             document.getElementById('use_legacy_importer').value = document.getElementById('use_legacy_importer_tmp').checked.toString()
             document.querySelector("#form-import-wakatime").submit();
         }
     },
     confirmClearData() {
-        if (confirm("Are you sure? This can not be undone!")) {
+        if (confirm(wakapiI18n.confirmClearData)) {
             document.querySelector("#form-clear-data").submit();
         }
     },
     confirmDeleteAccount() {
-        if (confirm("Are you sure? This can not be undone!")) {
+        if (confirm(wakapiI18n.confirmDeleteAccount)) {
             document.querySelector("#form-delete-user").submit();
         }
     },
