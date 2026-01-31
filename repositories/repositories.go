@@ -144,6 +144,11 @@ type ILeaderboardRepository interface {
 	GetAll() ([]*models.LeaderboardItem, error)
 	GetAllAggregatedByInterval(*models.IntervalKey, *uint8, int, int) ([]*models.LeaderboardItemRanked, error)
 	GetAggregatedByUserAndInterval(string, *models.IntervalKey, *uint8, int, int) ([]*models.LeaderboardItemRanked, error)
+	SumByUsersAndInterval([]string, *models.IntervalKey) (time.Duration, error)
+	TopKeysByUsersAndInterval([]string, *models.IntervalKey, uint8, int) ([]string, error)
+	InsertTeamBatch([]*models.TeamLeaderboardItem) error
+	GetTeamLeaderboardByInterval(*models.IntervalKey) ([]*models.TeamLeaderboardItem, error)
+	DeleteTeamByInterval(*models.IntervalKey) error
 }
 
 type IApiKeyRepository interface {

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
 	"strings"
@@ -134,11 +135,30 @@ func (l Leaderboard) LastUpdate() time.Time {
 }
 
 type TeamLeaderboardItem struct {
-	TeamID       string
-	TeamName     string
-	MemberCount  int
-	Total        time.Duration
-	TopLanguages []string
+	ID               uint          `json:"-" gorm:"primary_key; size:32"`
+	TeamID           string        `json:"team_id" gorm:"not null; size:36; uniqueIndex:idx_team_lb_combined"`
+	TeamName         string        `json:"team_name" gorm:"not null; size:255"`
+	Interval         string        `json:"interval" gorm:"not null; size:32; uniqueIndex:idx_team_lb_combined"`
+	MemberCount      int           `json:"member_count" gorm:"not null"`
+	Total            time.Duration `json:"total" gorm:"not null" swaggertype:"primitive,integer"`
+	TopLanguagesJSON string        `json:"-" gorm:"column:top_languages; size:512"`
+	TopLanguages     []string      `json:"top_languages" gorm:"-"`
+	CreatedAt        CustomTime    `json:"created_at" swaggertype:"string" format:"date" example:"2006-01-02 15:04:05.000"`
+}
+
+func (t *TeamLeaderboardItem) AfterFind() error {
+	if t.TopLanguagesJSON != "" {
+		json.Unmarshal([]byte(t.TopLanguagesJSON), &t.TopLanguages)
+	}
+	return nil
+}
+
+func (t *TeamLeaderboardItem) BeforeCreate() error {
+	if len(t.TopLanguages) > 0 {
+		b, _ := json.Marshal(t.TopLanguages)
+		t.TopLanguagesJSON = string(b)
+	}
+	return nil
 }
 
 type TeamLeaderboardItemRanked struct {

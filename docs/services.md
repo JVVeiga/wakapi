@@ -93,9 +93,11 @@ Todas as interfaces estão definidas em `services/services.go`. A implementaçã
 
 ### LeaderboardService (`services/leaderboard.go`)
 - **Schedule:** Múltiplos crons configuráveis
-- Gera rankings por tempo total, com agrupamento opcional
+- Gera rankings individuais por tempo total, com agrupamento opcional por linguagem
+- **Team leaderboard pré-computado:** após gerar rankings individuais, deriva leaderboard de times a partir dos `leaderboard_items` já existentes usando agregações SQL (SUM + GROUP BY), evitando O(N×M) queries on-the-fly
+- Dados de times persistidos em tabela `team_leaderboard_items` (total por time, top 3 linguagens, contagem de membros)
 - Cache: 6h TTL
-- Reage a `EventUserUpdate` para auto-gerar/remover entries
+- Reage a `EventUserUpdate` para auto-gerar/remover entries individuais e regenerar team leaderboard
 
 ### MiscService (`services/misc.go`)
 - **Jobs:**
@@ -126,7 +128,8 @@ MailService (orquestrador)
 |---------|-----|-----------|-----------|
 | AggregationService | Summary Aggregation | Diário (cron) | Regenera summaries |
 | ReportService | Report Generation | Semanal (cron) | Envia relatórios por e-mail |
-| LeaderboardService | Leaderboard | Múltiplos crons | Gera rankings |
+| LeaderboardService | Leaderboard Individual | Múltiplos crons | Gera rankings individuais |
+| LeaderboardService | Team Leaderboard | Múltiplos crons (após individual) | Gera rankings de times a partir dos dados individuais |
 | HousekeepingService | Data Cleanup | Diário (cron) | Remove dados antigos |
 | HousekeepingService | Inactive Users | Diário (cron) | Remove usuários inativos |
 | HousekeepingService | Cache Warming | A cada 12h | Aquece cache de projetos |

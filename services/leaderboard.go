@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -66,12 +65,13 @@ func NewLeaderboardService(leaderboardRepo repositories.ILeaderboardRepository, 
 			if user.PublicLeaderboard && !exists {
 				slog.Info("generating leaderboard after settings update", "userID", user.ID)
 				srv.ComputeLeaderboard([]*models.User{user}, srv.defaultScope, []uint8{models.SummaryLanguage})
+				srv.ComputeTeamLeaderboard(srv.defaultScope)
 			} else if !user.PublicLeaderboard && exists {
 				slog.Info("clearing leaderboard after settings update", "userID", user.ID)
 				if err := srv.repository.DeleteByUser(user.ID); err != nil {
 					config.Log().Error("failed to clear leaderboard for user", "userID", user.ID, "error", err)
 				}
-				srv.cache.Flush()
+				srv.ComputeTeamLeaderboard(srv.defaultScope)
 			}
 		}
 	}(&onUserUpdate)
@@ -93,6 +93,7 @@ func (srv *LeaderboardService) Schedule() {
 			return
 		}
 		srv.ComputeLeaderboard(users, srv.defaultScope, []uint8{models.SummaryLanguage})
+		srv.ComputeTeamLeaderboard(srv.defaultScope)
 	}
 
 	for _, cronExp := range srv.config.App.GetLeaderboardGenerationTimeCron() {
@@ -283,18 +284,19 @@ func (srv *LeaderboardService) GenerateAggregatedByUser(user *models.User, inter
 	return items, nil
 }
 
-func (srv *LeaderboardService) GetTeamLeaderboard(interval *models.IntervalKey) (models.TeamLeaderboard, error) {
-	cacheKey := "team_leaderboard__" + strings.Join(*interval, "__")
-	if cacheResult, ok := srv.cache.Get(cacheKey); ok {
-		return cacheResult.(models.TeamLeaderboard), nil
+func (srv *LeaderboardService) ComputeTeamLeaderboard(interval *models.IntervalKey) error {
+	slog.Info("generating team leaderboard", "interval", (*interval)[0])
+
+	if err := srv.repository.DeleteTeamByInterval(interval); err != nil {
+		return fmt.Errorf("failed to delete old team leaderboard items: %w", err)
 	}
 
 	teams, err := srv.teamService.GetAll()
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to get teams: %w", err)
 	}
 
-	items := make(models.TeamLeaderboard, 0, len(teams))
+	items := make([]*models.TeamLeaderboardItem, 0, len(teams))
 	for _, team := range teams {
 		members, err := srv.teamService.GetMembers(team.ID)
 		if err != nil {
@@ -302,62 +304,65 @@ func (srv *LeaderboardService) GetTeamLeaderboard(interval *models.IntervalKey) 
 			continue
 		}
 
-		var teamTotal time.Duration
-		memberSummaries := make([]*models.Summary, 0, len(members))
-
-		for _, member := range members {
-			memberUser, err := srv.userService.GetUserById(member.UserID)
-			if err != nil {
-				config.Log().Error("failed to get user for team leaderboard", "error", err, "user", member.UserID)
-				continue
-			}
-
-			err2, from, to := helpers.ResolveIntervalTZ(interval, memberUser.TZ(), memberUser.StartOfWeekDay())
-			if err2 != nil {
-				continue
-			}
-
-			summary, err := srv.summaryService.Aliased(from, to, memberUser, srv.summaryService.Retrieve, nil, nil, false)
-			if err != nil {
-				config.Log().Error("failed to get summary for team leaderboard", "error", err, "user", member.UserID)
-				continue
-			}
-
-			teamTotal += summary.TotalTime()
-			memberSummaries = append(memberSummaries, summary)
+		memberIDs := make([]string, len(members))
+		for i, m := range members {
+			memberIDs[i] = m.UserID
 		}
 
-		// Extract top 3 languages from merged summaries
-		var topLanguages []string
-		if len(memberSummaries) > 0 {
-			if merged, err := srv.summaryService.MergeSummariesAcrossUsers(memberSummaries); err == nil {
-				merged = merged.Sorted()
-				for i, lang := range merged.Languages {
-					if i >= 3 {
-						break
-					}
-					topLanguages = append(topLanguages, lang.Key)
-				}
-			}
+		if len(memberIDs) == 0 {
+			continue
 		}
 
-		items = append(items, &models.TeamLeaderboardItemRanked{
-			TeamLeaderboardItem: models.TeamLeaderboardItem{
-				TeamID:       team.ID,
-				TeamName:     team.Name,
-				MemberCount:  len(members),
-				Total:        teamTotal,
-				TopLanguages: topLanguages,
-			},
-		})
+		total, err := srv.repository.SumByUsersAndInterval(memberIDs, interval)
+		if err != nil {
+			config.Log().Error("failed to sum leaderboard for team", "error", err, "team", team.ID)
+			continue
+		}
+
+		topLangs, err := srv.repository.TopKeysByUsersAndInterval(memberIDs, interval, models.SummaryLanguage, 3)
+		if err != nil {
+			config.Log().Error("failed to get top languages for team", "error", err, "team", team.ID)
+		}
+
+		item := &models.TeamLeaderboardItem{
+			TeamID:       team.ID,
+			TeamName:     team.Name,
+			Interval:     (*interval)[0],
+			MemberCount:  len(members),
+			Total:        total,
+			TopLanguages: topLangs,
+		}
+		items = append(items, item)
 	}
 
-	// Sort by total desc and assign ranks
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].Total > items[j].Total
-	})
-	for i := range items {
-		items[i].Rank = uint(i + 1)
+	if len(items) > 0 {
+		if err := srv.repository.InsertTeamBatch(items); err != nil {
+			return fmt.Errorf("failed to insert team leaderboard items: %w", err)
+		}
+	}
+
+	srv.cache.Flush()
+	slog.Info("finished team leaderboard generation", "teamCount", len(items))
+	return nil
+}
+
+func (srv *LeaderboardService) GetTeamLeaderboard(interval *models.IntervalKey) (models.TeamLeaderboard, error) {
+	cacheKey := "team_leaderboard__" + strings.Join(*interval, "__")
+	if cacheResult, ok := srv.cache.Get(cacheKey); ok {
+		return cacheResult.(models.TeamLeaderboard), nil
+	}
+
+	dbItems, err := srv.repository.GetTeamLeaderboardByInterval(interval)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make(models.TeamLeaderboard, len(dbItems))
+	for i, dbItem := range dbItems {
+		items[i] = &models.TeamLeaderboardItemRanked{
+			TeamLeaderboardItem: *dbItem,
+			Rank:                uint(i + 1),
+		}
 	}
 
 	srv.cache.SetDefault(cacheKey, items)

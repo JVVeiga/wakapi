@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"time"
+
 	"github.com/muety/wakapi/models"
 	"github.com/muety/wakapi/utils"
 	"gorm.io/gorm"
@@ -103,6 +105,74 @@ func (r *LeaderboardRepository) DeleteByUserAndInterval(userId string, key *mode
 		Where("user_id = ?", userId).
 		Where("\"interval\" in ?", *key).
 		Delete(models.LeaderboardItem{}).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *LeaderboardRepository) SumByUsersAndInterval(userIDs []string, key *models.IntervalKey) (time.Duration, error) {
+	var total int64
+	if err := r.db.
+		Table("leaderboard_items").
+		Select("COALESCE(SUM(total), 0)").
+		Where("user_id IN ?", userIDs).
+		Where("\"interval\" IN ?", *key).
+		Where("\"by\" IS NULL").
+		Scan(&total).Error; err != nil {
+		return 0, err
+	}
+	return time.Duration(total), nil
+}
+
+func (r *LeaderboardRepository) TopKeysByUsersAndInterval(userIDs []string, key *models.IntervalKey, by uint8, limit int) ([]string, error) {
+	var results []struct {
+		Key      string
+		SumTotal int64
+	}
+	if err := r.db.
+		Table("leaderboard_items").
+		Select("\"key\", SUM(total) as sum_total").
+		Where("user_id IN ?", userIDs).
+		Where("\"interval\" IN ?", *key).
+		Where("\"by\" = ?", by).
+		Where("\"key\" IS NOT NULL").
+		Group("\"key\"").
+		Order("sum_total DESC").
+		Limit(limit).
+		Scan(&results).Error; err != nil {
+		return nil, err
+	}
+	keys := make([]string, len(results))
+	for i, r := range results {
+		keys[i] = r.Key
+	}
+	return keys, nil
+}
+
+func (r *LeaderboardRepository) InsertTeamBatch(items []*models.TeamLeaderboardItem) error {
+	if err := r.db.
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(&items).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *LeaderboardRepository) GetTeamLeaderboardByInterval(key *models.IntervalKey) ([]*models.TeamLeaderboardItem, error) {
+	var items []*models.TeamLeaderboardItem
+	if err := r.db.
+		Where("\"interval\" IN ?", *key).
+		Order("total DESC").
+		Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *LeaderboardRepository) DeleteTeamByInterval(key *models.IntervalKey) error {
+	if err := r.db.
+		Where("\"interval\" IN ?", *key).
+		Delete(models.TeamLeaderboardItem{}).Error; err != nil {
 		return err
 	}
 	return nil

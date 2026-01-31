@@ -14,6 +14,9 @@ User (Entidade Principal)
 ├── ProjectLabel (1:N) — CASCADE DELETE
 ├── LeaderboardItem (1:N) — CASCADE DELETE
 └── Diagnostics (sem FK direta)
+
+Team
+└── TeamLeaderboardItem (1:N) — por TeamID, pré-computado via cron
 ```
 
 ## Entidades
@@ -134,6 +137,21 @@ Entrada no leaderboard público.
 - `Total` (time.Duration) — tempo total
 - `Key` (*string) — chave de agrupamento
 
+### TeamLeaderboardItem (`models/leaderboard.go`)
+
+Entrada pré-computada do leaderboard de times. Derivada dos `leaderboard_items` individuais via agregação SQL no cron.
+
+- `ID` (uint, PK)
+- `TeamID` (string) — ID do time
+- `TeamName` (string) — nome do time
+- `Interval` (string) — período (7_days, etc.)
+- `MemberCount` (int) — número de membros do time
+- `Total` (time.Duration) — tempo total do time (soma dos individuais)
+- `TopLanguagesJSON` (string) — JSON serializado das top 3 linguagens (persistido)
+- `TopLanguages` ([]string) — top 3 linguagens (calculado via GORM hooks, não persistido)
+
+Unique index: `idx_team_lb_combined` (TeamID, Interval)
+
 ### KeyStringValue (`models/shared.go`)
 
 Store key-value genérico para estado da aplicação.
@@ -161,3 +179,4 @@ Wrapper sobre `time.Time` que suporta unmarshalling de timestamps Python (format
 | LanguageMapping | `idx_language_mapping_user`, unique (UserID, Extension) |
 | ProjectLabel | `idx_project_label_user` |
 | LeaderboardItem | `idx_leaderboard_user`, `idx_leaderboard_combined` |
+| TeamLeaderboardItem | `idx_team_lb_combined` (TeamID, Interval) |
