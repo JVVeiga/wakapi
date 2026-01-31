@@ -48,6 +48,9 @@ func (s *LeaderboardViewModel) ColorModifier(item *models.LeaderboardItemRanked,
 }
 
 func (s *LeaderboardViewModel) ColorModifierTeam(item *models.TeamLeaderboardItemRanked) string {
+	if s.UserTeamIDs[item.TeamID] {
+		return "self"
+	}
 	if item.Rank == 1 {
 		return "gold"
 	}
