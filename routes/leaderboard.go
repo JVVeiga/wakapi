@@ -188,19 +188,55 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 
 	leaderboard.FilterEmpty()
 
+	memberDashboardLinks := h.buildMemberDashboardLinks(user)
+
 	vm := &view.LeaderboardViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
 			SharedViewModel: view.NewSharedViewModel(h.config, nil),
 			User:            user,
 		},
-		Tab:           tab,
-		By:            byParam,
-		Key:           keyParam,
-		Items:         leaderboard,
-		UserLanguages: userLanguages,
-		TopKeys:       topKeys,
-		IntervalLabel: h.leaderboardService.GetDefaultScope().GetHumanReadable(),
-		PageParams:    pageParams,
+		Tab:                  tab,
+		By:                   byParam,
+		Key:                  keyParam,
+		Items:                leaderboard,
+		MemberDashboardLinks: memberDashboardLinks,
+		UserLanguages:        userLanguages,
+		TopKeys:              topKeys,
+		IntervalLabel:        h.leaderboardService.GetDefaultScope().GetHumanReadable(),
+		PageParams:           pageParams,
 	}
 	return routeutils.WithSessionMessages(vm, r, w)
+}
+
+// buildMemberDashboardLinks returns a map of userID -> dashboard URL
+// for users that the viewer can access (as team owner or admin).
+func (h *LeaderboardHandler) buildMemberDashboardLinks(viewer *models.User) map[string]string {
+	links := make(map[string]string)
+	if viewer == nil {
+		return links
+	}
+
+	var teams []*models.Team
+	if viewer.IsAdmin {
+		teams, _ = h.teamService.GetAll()
+	} else {
+		teams, _ = h.teamService.GetByUser(viewer.ID)
+	}
+
+	for _, team := range teams {
+		isOwner, _ := h.teamService.IsTeamOwner(team.ID, viewer.ID)
+		if !viewer.IsAdmin && !isOwner {
+			continue
+		}
+		members, err := h.teamService.GetMembers(team.ID)
+		if err != nil {
+			continue
+		}
+		for _, member := range members {
+			if _, exists := links[member.UserID]; !exists {
+				links[member.UserID] = fmt.Sprintf("teams/%s/members/%s", team.ID, member.UserID)
+			}
+		}
+	}
+	return links
 }

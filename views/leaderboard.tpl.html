@@ -113,7 +113,13 @@
                         <span class="iconify inline cursor-pointer text-secondary rounded-full border-accent" style="width: 24px; height: 24px" data-icon="ic:round-person"></span>
                         {{ end }}
                         <div>
+                            {{ if $.MemberDashboardLink $item.UserID }}
+                            <a href="{{ $.MemberDashboardLink $item.UserID }}" class="hover:text-primary hover:underline">
+                                <strong class="text-ellipsis truncate">@{{ $item.UserID }}</strong>
+                            </a>
+                            {{ else }}
                             <strong class="text-ellipsis truncate">@{{ $item.UserID }}</strong>
+                            {{ end }}
                             {{ if $item.User.HasActiveSubscription }}
                             <span class="iconify inline text-gold ml-1" data-icon="jam:crown-f" style="margin-bottom: -2px" title="{{ $item.UserID }} is a supporter of Wakapi!"></span>
                             {{ end }}

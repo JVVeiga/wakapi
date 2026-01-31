@@ -8,16 +8,17 @@ import (
 
 type LeaderboardViewModel struct {
 	SharedLoggedInViewModel
-	By            string
-	Key           string
-	Tab           string
-	Items         []*models.LeaderboardItemRanked
-	TeamItems     []*models.TeamLeaderboardItemRanked
-	UserTeamIDs   map[string]bool
-	TopKeys       []string
-	UserLanguages map[string][]string
-	IntervalLabel string
-	PageParams    *utils.PageParams
+	By                   string
+	Key                  string
+	Tab                  string
+	Items                []*models.LeaderboardItemRanked
+	TeamItems            []*models.TeamLeaderboardItemRanked
+	UserTeamIDs          map[string]bool
+	MemberDashboardLinks map[string]string // userID -> "/teams/{teamID}/members/{userID}"
+	TopKeys              []string
+	UserLanguages        map[string][]string
+	IntervalLabel        string
+	PageParams           *utils.PageParams
 }
 
 func (s *LeaderboardViewModel) WithSuccess(m string) *LeaderboardViewModel {
@@ -57,6 +58,10 @@ func (s *LeaderboardViewModel) ColorModifierTeam(item *models.TeamLeaderboardIte
 		return "bronze"
 	}
 	return "default"
+}
+
+func (s *LeaderboardViewModel) MemberDashboardLink(userID string) string {
+	return s.MemberDashboardLinks[userID]
 }
 
 func (s *LeaderboardViewModel) CanAccessTeam(teamID string) bool {
