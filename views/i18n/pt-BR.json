@@ -288,6 +288,17 @@
   "summary.step2_title": "Passo 2: Configure seu ~/.wakatime.cfg assim:",
   "summary.step3_title": "Passo 3: Comece a programar e volte aqui depois!",
 
+  "filter.project": "Projeto",
+  "filter.project_placeholder": "Filtrar por projeto ...",
+  "filter.language": "Linguagem",
+  "filter.language_placeholder": "Filtrar por linguagem ...",
+  "filter.machine": "Máquina",
+  "filter.machine_placeholder": "Filtrar por máquina ...",
+  "filter.label": "Label",
+  "filter.label_placeholder": "Filtrar por label ...",
+  "filter.category": "Categoria",
+  "filter.category_placeholder": "Filtrar por categoria ...",
+
   "projects.title": "Seus Projetos",
   "projects.description": "Esta é uma visão geral de todos os seus projetos, ordenados por atividade recente. A intensidade da cor indica a atividade geral naquele projeto.",
   "projects.no_data": "Nenhum dado de projeto disponível ainda... Comece a programar!",

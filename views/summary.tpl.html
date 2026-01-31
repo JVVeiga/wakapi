@@ -46,30 +46,40 @@
                 type: 'project',
                 options: wakapiData.availableProjectNames.toSorted(),
                 selection: null,
+                label: '{{ .T "filter.project" }}',
+                placeholder: '{{ .T "filter.project_placeholder" }}',
             })" @vue:mounted="mounted"></div>
 
             <div v-scope="EntityFilter({
                 type: 'language',
                 options: wakapiData.availableLanguageNames.toSorted(),
                 selection: null,
+                label: '{{ .T "filter.language" }}',
+                placeholder: '{{ .T "filter.language_placeholder" }}',
             })" @vue:mounted="mounted"></div>
 
             <div v-scope="EntityFilter({
                 type: 'machine',
                 options: wakapiData.availableMachineNames.toSorted(),
                 selection: null,
+                label: '{{ .T "filter.machine" }}',
+                placeholder: '{{ .T "filter.machine_placeholder" }}',
             })" @vue:mounted="mounted"></div>
 
             <div v-scope="EntityFilter({
                 type: 'label',
                 options: wakapiData.availableLabelNames.toSorted(),
                 selection: null,
+                label: '{{ .T "filter.label" }}',
+                placeholder: '{{ .T "filter.label_placeholder" }}',
             })" @vue:mounted="mounted"></div>
 
             <div v-scope="EntityFilter({
                 type: 'category',
                 options: wakapiData.availableCategoryNames.toSorted(),
                 selection: null,
+                label: '{{ .T "filter.category" }}',
+                placeholder: '{{ .T "filter.category_placeholder" }}',
             })" @vue:mounted="mounted"></div>
         </div>
 

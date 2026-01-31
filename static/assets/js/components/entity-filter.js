@@ -1,13 +1,12 @@
-function EntityFilter({type, options, selection}) {
+function EntityFilter({type, options, selection, label, placeholder}) {
     return {
         $template: '#entity-filter-template',
         $delimiters: ['${', '}'],
         type: type,
         options: options,
         selection: selection,
-        display() {
-            return this.type.capitalize()
-        },
+        label: label || type.capitalize(),
+        placeholder: placeholder || ('Filter by ' + type + ' ...'),
         onSelectionUpdated(e) {
             this.selection = e.target.value == 'null' ? null : e.target.value
             this.$nextTick(() => {

@@ -288,6 +288,17 @@
   "summary.step2_title": "Step 2: Set your ~/.wakatime.cfg to this:",
   "summary.step3_title": "Step 3: Start coding and then check back here!",
 
+  "filter.project": "Project",
+  "filter.project_placeholder": "Filter by project ...",
+  "filter.language": "Language",
+  "filter.language_placeholder": "Filter by language ...",
+  "filter.machine": "Machine",
+  "filter.machine_placeholder": "Filter by machine ...",
+  "filter.label": "Label",
+  "filter.label_placeholder": "Filter by label ...",
+  "filter.category": "Category",
+  "filter.category_placeholder": "Filter by category ...",
+
   "projects.title": "Your Projects",
   "projects.description": "This is an overview of all your projects, ordered by recent activity. Color intensity indicates the overall activity on that project.",
   "projects.no_data": "No project data available, yet... Go start coding!",
