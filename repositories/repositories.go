@@ -174,5 +174,6 @@ type ITeamRepository interface {
 	GetMemberByTeamAndUser(string, string) (*models.TeamMember, error)
 	AddMember(*models.TeamMember) (*models.TeamMember, error)
 	RemoveMember(string, string) error
+	TransferOwnership(string, string) error
 	CountByTeam(string) (int64, error)
 }

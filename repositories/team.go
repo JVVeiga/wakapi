@@ -143,6 +143,30 @@ func (r *TeamRepository) RemoveMember(teamID, userID string) error {
 		Delete(&models.TeamMember{}).Error
 }
 
+func (r *TeamRepository) TransferOwnership(teamID, newOwnerID string) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Update old owner's role to member
+		if err := tx.Model(&models.TeamMember{}).
+			Where("team_id = ? AND role = ?", teamID, models.TeamRoleOwner).
+			Update("role", models.TeamRoleMember).Error; err != nil {
+			return err
+		}
+		// Update new owner's role to owner
+		if err := tx.Model(&models.TeamMember{}).
+			Where("team_id = ? AND user_id = ?", teamID, newOwnerID).
+			Update("role", models.TeamRoleOwner).Error; err != nil {
+			return err
+		}
+		// Update team's owner_id
+		if err := tx.Model(&models.Team{}).
+			Where("id = ?", teamID).
+			Update("owner_id", newOwnerID).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 func (r *TeamRepository) CountByTeam(teamID string) (int64, error) {
 	var count int64
 	err := r.db.

@@ -48,7 +48,7 @@ Montadas em `rootRouter` com `SecurityMiddleware` (headers CSP, X-Frame-Options)
 | POST | `/admin/teams` | AdminHandler.PostCreateTeam | Sim (admin) | Criar time |
 | GET | `/admin/teams/{id}` | AdminHandler.GetTeamDetail | Sim (admin) | Detalhes de um time |
 | POST | `/admin/teams/{id}` | AdminHandler.PostTeamAction | Sim (admin) | Ações no time (editar/deletar) |
-| POST | `/admin/teams/{id}/members` | AdminHandler.PostTeamMemberAction | Sim (admin) | Adicionar/remover membro |
+| POST | `/admin/teams/{id}/members` | AdminHandler.PostTeamMemberAction | Sim (admin) | Adicionar/remover membro, transferir ownership |
 
 ## API REST
 

@@ -196,6 +196,7 @@ type ITeamService interface {
 	GetAll() ([]*models.Team, error)
 	AddMember(string, string, string) (*models.TeamMember, error)
 	RemoveMember(string, string) error
+	TransferOwnership(string, string) error
 	GetMembers(string) ([]*models.TeamMember, error)
 	CountMembers(string) (int64, error)
 	IsTeamOwner(string, string) (bool, error)

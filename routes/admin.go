@@ -436,6 +436,19 @@ func (h *AdminHandler) PostTeamMemberAction(w http.ResponseWriter, r *http.Reque
 			routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.member_removed"))
 		}
 
+	case "transfer_ownership":
+		if err := h.teamSrvc.TransferOwnership(teamID, userID); err != nil {
+			conf.Log().Request(r).Error("failed to transfer team ownership", "error", err)
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.ownership_transfer_failed"))
+		} else {
+			conf.Log().Info("team ownership transferred",
+				"admin", adminUser.ID,
+				"team_id", teamID,
+				"new_owner", userID,
+			)
+			routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.ownership_transferred"))
+		}
+
 	default:
 		routeutils.SetError(r, w, i18n.Translate(lang, "flash.unknown_action"))
 	}

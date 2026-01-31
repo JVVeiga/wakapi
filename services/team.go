@@ -151,6 +151,20 @@ func (srv *TeamService) RemoveMember(teamID, userID string) error {
 	return nil
 }
 
+func (srv *TeamService) TransferOwnership(teamID, newOwnerID string) error {
+	_, err := srv.repository.GetMemberByTeamAndUser(teamID, newOwnerID)
+	if err != nil {
+		return errors.New("new owner must be a member of the team")
+	}
+
+	if err := srv.repository.TransferOwnership(teamID, newOwnerID); err != nil {
+		return err
+	}
+
+	srv.invalidateTeam(teamID)
+	return nil
+}
+
 func (srv *TeamService) GetMembers(teamID string) ([]*models.TeamMember, error) {
 	cacheKey := "team_members_" + teamID
 	if cached, found := srv.cache.Get(cacheKey); found {
