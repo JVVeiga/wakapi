@@ -32,34 +32,34 @@
         <a class="text-secondary hidden lg:inline-block">{{ .T "nav.resources" }}</a>
         <span class="iconify inline text-xl text-secondary" data-icon="akar-icons:chevron-down"></span>
 
-        <div v-cloak v-show="state.showDropdownResources" class="flex bg-card shadow-md z-10 p-2 absolute top-0 right-0 rounded popup mt-12 w-full" id="resources-menu-dropdown" style="min-width: 128px">
+        <div v-cloak v-show="state.showDropdownResources" class="flex bg-card shadow-md z-10 p-2 absolute top-0 right-0 rounded popup mt-12 w-max" id="resources-menu-dropdown" style="min-width: 160px">
             <div class="grow flex flex-col">
                 <div class="submenu-item">
-                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold" href="https://github.com/muety/wakapi" target="_blank" rel="noreferrer noopener" @click="state.showDropdownResources = !state.showDropdownResources"  data-trigger-for="showDropdownResources">
+                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold gap-4 whitespace-nowrap" href="https://github.com/muety/wakapi" target="_blank" rel="noreferrer noopener" @click="state.showDropdownResources = !state.showDropdownResources"  data-trigger-for="showDropdownResources">
                         <span class="text-sm">{{ .T "nav.github" }}</span>
                         <span class="iconify inline" data-icon="codicon:github-inverted"></span>
                     </a>
                 </div>
                 <div class="submenu-item">
-                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold" href="setup" @click="state.showDropdownResources = !state.showDropdownResources"  data-trigger-for="showDropdownResources">
+                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold gap-4 whitespace-nowrap" href="setup" @click="state.showDropdownResources = !state.showDropdownResources"  data-trigger-for="showDropdownResources">
                         <span class="text-sm">{{ .T "nav.setup" }}</span>
                         <span class="iconify inline" data-icon="ic:outline-integration-instructions"></span>
                     </a>
                 </div>
                 <div class="submenu-item">
-                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold" href="swagger-ui" @click="state.showDropdownResources = !state.showDropdownResources"  data-trigger-for="showDropdownResources">
+                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold gap-4 whitespace-nowrap" href="swagger-ui" @click="state.showDropdownResources = !state.showDropdownResources"  data-trigger-for="showDropdownResources">
                         <span class="text-sm">{{ .T "nav.api_docs" }}</span>
                         <span class="iconify inline" data-icon="bx:bx-code-curly"></span>
                     </a>
                 </div>
                 <div class="submenu-item">
-                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold" href="https://wakatime.com" target="_blank" rel="noreferrer noopener" @click="state.showDropdownResources = !state.showDropdownResources"  data-trigger-for="showDropdownResources">
+                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold gap-4 whitespace-nowrap" href="https://wakatime.com" target="_blank" rel="noreferrer noopener" @click="state.showDropdownResources = !state.showDropdownResources"  data-trigger-for="showDropdownResources">
                         <span class="text-sm">{{ .T "nav.wakatime" }}</span>
                         <span class="iconify inline" data-icon="simple-icons:wakatime"></span>
                     </a>
                 </div>
                 <div class="submenu-item">
-                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold" href="https://github.com/sponsors/muety" target="_blank" rel="noreferrer noopener" @click="state.showDropdownResources = !state.showDropdownResources"  data-trigger-for="showDropdownResources">
+                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold gap-4 whitespace-nowrap" href="https://github.com/sponsors/muety" target="_blank" rel="noreferrer noopener" @click="state.showDropdownResources = !state.showDropdownResources"  data-trigger-for="showDropdownResources">
                         <span class="text-sm">{{ .T "nav.donate" }}</span>
                         <span class="iconify inline" data-icon="bx:bxs-heart"></span>
                     </a>
@@ -108,14 +108,14 @@
         <div v-cloak v-show="state.showDropdownUser" class="flex bg-card shadow-md z-10 p-2 absolute top-0 right-0 rounded popup mt-16 w-full" id="user-menu-popup" style="min-width: 156px;">
             <div class="grow flex flex-col">
                 <div class="submenu-item hover:bg-focused rounded p-1 text-right">
-                    <button class="flex justify-between w-full text-foreground items-center px-2 font-semibold" @click="state.showApiKey = true" data-trigger-for="showApiKey">
+                    <button class="flex justify-between w-full text-foreground items-center px-2 font-semibold gap-4 whitespace-nowrap" @click="state.showApiKey = true" data-trigger-for="showApiKey">
                         <span class="text-sm">{{ .T "nav.show_api_key" }}</span>
                         <span class="iconify inline" data-icon="fluent:key-32-filled"></span>
                     </button>
                 </div>
                 {{ if .InvitesEnabled }}
                 <div class="submenu-item hover:bg-focused rounded p-1 text-right">
-                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold" href="settings#account">
+                    <a class="flex justify-between w-full text-foreground items-center px-2 font-semibold gap-4 whitespace-nowrap" href="settings#account">
                         <span class="text-sm">{{ .T "nav.invite_friend" }}</span>
                         <span class="iconify inline" data-icon="mdi:invite"></span>
                     </a>
@@ -123,7 +123,7 @@
                 {{ end }}
                 <div class="submenu-item hover:bg-focused rounded p-1 text-right">
                     <form action="logout" method="post" class="grow">
-                        <button type="submit" class="flex justify-between w-full text-foreground items-center px-2 font-semibold">
+                        <button type="submit" class="flex justify-between w-full text-foreground items-center px-2 font-semibold gap-4 whitespace-nowrap">
                             <span class="text-sm">{{ .T "nav.logout" }}</span>
                             <span class="iconify inline" data-icon="ls:logout"></span>
                         </button>
