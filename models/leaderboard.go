@@ -132,3 +132,28 @@ func (l Leaderboard) LastUpdate() time.Time {
 	}
 	return lastUpdate
 }
+
+type TeamLeaderboardItem struct {
+	TeamID       string
+	TeamName     string
+	MemberCount  int
+	Total        time.Duration
+	TopLanguages []string
+}
+
+type TeamLeaderboardItemRanked struct {
+	TeamLeaderboardItem
+	Rank uint
+}
+
+type TeamLeaderboard []*TeamLeaderboardItemRanked
+
+func (tl TeamLeaderboard) Sorted() TeamLeaderboard {
+	sorted := make(TeamLeaderboard, len(tl))
+	copy(sorted, tl)
+	slice.SortByField(sorted, "Total", "desc")
+	for i := range sorted {
+		sorted[i].Rank = uint(i + 1)
+	}
+	return sorted
+}

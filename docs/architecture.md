@@ -31,7 +31,7 @@ wakapi/
 │   ├── api_key.go               # Chaves de API
 │   ├── project_label.go         # Labels de projetos
 │   ├── language_mapping.go      # Mapeamento extensão → linguagem
-│   ├── leaderboard.go           # Item do leaderboard
+│   ├── leaderboard.go           # Item do leaderboard (usuários e times)
 │   ├── team.go                  # Time e membros de time
 │   ├── diagnostics.go           # Dados de diagnóstico
 │   ├── shared.go                # KeyStringValue, CustomTime

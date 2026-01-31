@@ -145,6 +145,7 @@ type ILeaderboardService interface {
 	GetAggregatedByIntervalAndUser(*models.IntervalKey, string, *uint8, bool) (models.Leaderboard, error)
 	GenerateByUser(*models.User, *models.IntervalKey) (*models.LeaderboardItem, error)
 	GenerateAggregatedByUser(*models.User, *models.IntervalKey, uint8) ([]*models.LeaderboardItem, error)
+	GetTeamLeaderboard(*models.IntervalKey) (models.TeamLeaderboard, error)
 }
 
 type IUserService interface {

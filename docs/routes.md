@@ -32,7 +32,7 @@ Montadas em `rootRouter` com `SecurityMiddleware` (headers CSP, X-Frame-Options)
 | GET | `/settings` | SettingsHandler.GetIndex | Sim (redirect) | Configurações |
 | POST | `/settings` | SettingsHandler.PostIndex | Sim (redirect) | Salvar configurações |
 | GET | `/projects` | ProjectsHandler.GetIndex | Sim (redirect) | Lista de projetos |
-| GET | `/leaderboard` | LeaderboardHandler.GetIndex | Sim (redirect) | Leaderboard (requer autenticação) |
+| GET | `/leaderboard` | LeaderboardHandler.GetIndex | Sim (redirect) | Leaderboard (requer autenticação). `?tab=teams` para ranking de times |
 | GET | `/imprint` | ImprintHandler.GetImprint | Não | Impressum legal |
 | GET | `/setup` | SetupHandler.GetIndex | Opcional | Onboarding |
 | GET | `/unsubscribe` | MiscHandler.GetUnsubscribe | Não | Desinscrever de e-mails |

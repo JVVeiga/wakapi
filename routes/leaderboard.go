@@ -58,12 +58,47 @@ func (h *LeaderboardHandler) GetIndex(w http.ResponseWriter, r *http.Request) {
 
 func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWriter) *view.LeaderboardViewModel {
 	user := middlewares.GetPrincipal(r)
+	tabParam := strings.ToLower(r.URL.Query().Get("tab"))
 	byParam := strings.ToLower(r.URL.Query().Get("by"))
 	keyParam := strings.ToLower(r.URL.Query().Get("key"))
 	pageParams := utils.ParsePageParamsWithDefault(r, 1, 100)
 	// note: pagination is not fully implemented, yet
 	// count function to get total item / total pages is missing
 	// and according ui (+ optionally search bar) is missing, too
+
+	// Determine active tab
+	tab := "total"
+	if tabParam == "teams" {
+		tab = "teams"
+	} else if byParam != "" {
+		tab = "language"
+	}
+
+	if tab == "teams" {
+		teamItems, err := h.leaderboardService.GetTeamLeaderboard(h.leaderboardService.GetDefaultScope())
+		if err != nil {
+			conf.Log().Request(r).Error("error while fetching team leaderboard", "error", err)
+			return &view.LeaderboardViewModel{
+				SharedLoggedInViewModel: view.SharedLoggedInViewModel{
+					SharedViewModel: view.NewSharedViewModel(h.config, &view.Messages{Error: criticalError}),
+					User:            user,
+				},
+				Tab: tab,
+			}
+		}
+
+		vm := &view.LeaderboardViewModel{
+			SharedLoggedInViewModel: view.SharedLoggedInViewModel{
+				SharedViewModel: view.NewSharedViewModel(h.config, nil),
+				User:            user,
+			},
+			Tab:           tab,
+			TeamItems:     teamItems,
+			IntervalLabel: h.leaderboardService.GetDefaultScope().GetHumanReadable(),
+			PageParams:    pageParams,
+		}
+		return routeutils.WithSessionMessages(vm, r, w)
+	}
 
 	var err error
 	var leaderboard models.Leaderboard
@@ -146,6 +181,7 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 			SharedViewModel: view.NewSharedViewModel(h.config, nil),
 			User:            user,
 		},
+		Tab:           tab,
 		By:            byParam,
 		Key:           keyParam,
 		Items:         leaderboard,

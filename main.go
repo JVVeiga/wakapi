@@ -203,7 +203,7 @@ func main() {
 	miscService = services.NewMiscService(userService, heartbeatService, summaryService, keyValueService, mailService)
 
 	if config.App.LeaderboardEnabled {
-		leaderboardService = services.NewLeaderboardService(leaderboardRepository, summaryService, userService)
+		leaderboardService = services.NewLeaderboardService(leaderboardRepository, summaryService, userService, teamService)
 	}
 
 	// Schedule background tasks

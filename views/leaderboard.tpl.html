@@ -33,13 +33,53 @@
         </p>
 
         <ul class="flex space-x-4 mb-4 text-muted">
-            <li class="font-semibold text-xl {{ if eq .By "" }} text-foreground {{ else }} hover:text-secondary {{ end }}">
+            <li class="font-semibold text-xl {{ if eq .Tab "total" }} text-foreground {{ else }} hover:text-secondary {{ end }}">
                 <a href="leaderboard">Total</a>
             </li>
-            <li class="font-semibold text-xl {{ if eq .By "language" }} text-foreground {{ else }} hover:text-secondary {{ end }}">
+            <li class="font-semibold text-xl {{ if eq .Tab "language" }} text-foreground {{ else }} hover:text-secondary {{ end }}">
                 <a href="leaderboard?by=language">By Language</a>
             </li>
+            <li class="font-semibold text-xl {{ if eq .Tab "teams" }} text-foreground {{ else }} hover:text-secondary {{ end }}">
+                <a href="leaderboard?tab=teams">Teams</a>
+            </li>
         </ul>
+
+        {{ if eq .Tab "teams" }}
+        <div class="flex flex-col space-y-4 mt-4 text-foreground w-full lg:w-3/4">
+            {{ if .TeamItems }}
+            <ol>
+                {{ range $i, $item := .TeamItems }}
+                <li class="px-4 py-2 my-2 rounded-md border-2 leaderboard-{{ ($.ColorModifierTeam $item) }} flex justify-between">
+                    <div class="w-12"><strong># {{ $item.Rank }}</strong></div>
+                    <div class="flex flex-grow mx-1 justify-start items-center space-x-4 align-middle">
+                        <span class="iconify inline text-secondary" style="width: 24px; height: 24px" data-icon="mdi:account-group"></span>
+                        <div>
+                            <a href="teams/{{ $item.TeamID }}" class="hover:text-primary hover:underline">
+                                <strong class="text-ellipsis truncate">{{ $item.TeamName }}</strong>
+                            </a>
+                            <span class="text-sm text-muted ml-2">{{ $item.MemberCount }} members</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 mx-1 hidden sm:inline-block truncate leading-6 align-middle">
+                        {{ range $j, $lang := $item.TopLanguages }}
+                        {{ if $.LangIcon $lang }}
+                        <span class="align-middle leading-none"><span class="iconify inline text-white text-base" data-icon="{{ ($.LangIcon $lang) | urlSafe }}"></span></span>
+                        {{ end }}
+                        <span class="text-sm leading-6">{{ $lang }}{{ if lt $j (add (len $item.TopLanguages) -1) }},&nbsp;{{ end }}</span>
+                        {{ end }}
+                    </div>
+                    <div class="flex-1 ml-1 text-right"><span>{{ $item.Total | duration }}</span></div>
+                </li>
+                {{ end }}
+            </ol>
+            {{ else }}
+            <p>
+                <span class="iconify inline text-white text-base" data-icon="twemoji:frowning-face"></span>&nbsp;
+                No teams found ...
+            </p>
+            {{ end }}
+        </div>
+        {{ else }}
 
         {{ if ne .By "" }}
         <div class="flex flex-wrap space-x-2 mb-4">
@@ -96,6 +136,7 @@
             {{ end }}
 
         </div>
+        {{ end }}
     </div>
 </main>
 

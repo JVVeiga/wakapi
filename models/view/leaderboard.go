@@ -10,7 +10,9 @@ type LeaderboardViewModel struct {
 	SharedLoggedInViewModel
 	By            string
 	Key           string
+	Tab           string
 	Items         []*models.LeaderboardItemRanked
+	TeamItems     []*models.TeamLeaderboardItemRanked
 	TopKeys       []string
 	UserLanguages map[string][]string
 	IntervalLabel string
@@ -31,6 +33,19 @@ func (s *LeaderboardViewModel) ColorModifier(item *models.LeaderboardItemRanked,
 	if principal != nil && item.UserID == principal.ID {
 		return "self"
 	}
+	if item.Rank == 1 {
+		return "gold"
+	}
+	if item.Rank == 2 {
+		return "silver"
+	}
+	if item.Rank == 3 {
+		return "bronze"
+	}
+	return "default"
+}
+
+func (s *LeaderboardViewModel) ColorModifierTeam(item *models.TeamLeaderboardItemRanked) string {
 	if item.Rank == 1 {
 		return "gold"
 	}
