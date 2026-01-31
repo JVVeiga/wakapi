@@ -1076,10 +1076,12 @@ func (h *SettingsHandler) buildViewModel(r *http.Request, w http.ResponseWriter,
 	inviteCode := getVal[string](args, valueInviteCode, "")
 	inviteLink := condition.Ternary[bool, string](inviteCode == "", "", fmt.Sprintf("%s/signup?invite=%s", h.config.Server.GetPublicUrl(), inviteCode))
 
+	lang := routeutils.ResolveLanguage(r, user)
+
 	// API keys
 	combinedApiKeys := []*view.SettingsApiKeys{
 		{
-			Name:     "Main API Key",
+			Name:     i18n.Translate(lang, "settings.main_api_key"),
 			Value:    user.ApiKey,
 			ReadOnly: false,
 		},

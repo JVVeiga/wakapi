@@ -108,7 +108,7 @@
                     <div class="w-12"><strong># {{ $item.Rank }}</strong></div>
                     <div class="flex flex-grow w-16 mx-1 justify-start items-center space-x-4 align-middle">
                         {{ if avatarUrlTemplate }}
-                        <img src="{{ $item.User.AvatarURL avatarUrlTemplate }}" width="24px" class="rounded-full border-accent" alt="User Profile Avatar"/>
+                        <img src="{{ $item.User.AvatarURL avatarUrlTemplate }}" width="24px" class="rounded-full border-accent" alt="{{ $.T "common.user_avatar_alt" }}"/>
                         {{ else }}
                         <span class="iconify inline cursor-pointer text-secondary rounded-full border-accent" style="width: 24px; height: 24px" data-icon="ic:round-person"></span>
                         {{ end }}

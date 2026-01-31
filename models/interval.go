@@ -61,3 +61,29 @@ func (k *IntervalKey) GetHumanReadable() string {
 	}
 	return ""
 }
+
+var intervalI18nKeys = map[string]string{
+	"Today":                      "interval.today",
+	"Yesterday":                  "interval.yesterday",
+	"Last 24 Hours":              "interval.last_24_hours",
+	"This Week":                  "interval.this_week",
+	"Last Week":                  "interval.last_week",
+	"This Month":                 "interval.this_month",
+	"Last Month":                 "interval.last_month",
+	"This Year":                  "interval.this_year",
+	"Last 7 Days":                "interval.last_7_days",
+	"Last 7 Days from Yesterday": "interval.last_7_days_yesterday",
+	"Last 14 Days":               "interval.last_14_days",
+	"Last 30 Days":               "interval.last_30_days",
+	"Last 6 Months":              "interval.last_6_months",
+	"Last 12 Months":             "interval.last_12_months",
+	"All Time":                   "interval.all_time",
+}
+
+func (k *IntervalKey) GetI18nKey() string {
+	hr := k.GetHumanReadable()
+	if key, ok := intervalI18nKeys[hr]; ok {
+		return key
+	}
+	return ""
+}

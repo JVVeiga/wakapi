@@ -148,9 +148,9 @@
                 <div class="flex justify-between">
                     <span class="font-semibold text-lg w-1/2 flex-1 whitespace-nowrap">{{ .T "nav.projects" }}</span>
                     <div class="flex justify-end flex-1 text-xs items-center">
-                        <span class="mr-1">Top </span>
+                        <span class="mr-1">{{ $.T "summary.top_prefix" }} </span>
                         <input type="number" min="1" id="project-top-picker" data-entity="0" class="top-picker bg-focused rounded-md text-center w-12" value="10">
-                        <span class="ml-1">of&nbsp;&nbsp;<span class="num-total-items" data-entity="0"></span></span>
+                        <span class="ml-1">{{ $.T "summary.of_total" }}&nbsp;&nbsp;<span class="num-total-items" data-entity="0"></span></span>
                     </div>
                 </div>
                 <canvas id="chart-projects" class="mt-2"></canvas>
@@ -164,9 +164,9 @@
                 <div class="flex justify-between">
                     <span class="font-semibold text-lg w-1/2 flex-1 whitespace-nowrap">{{ .T "summary.branches" }}</span>
                     <div class="flex justify-end flex-1 text-xs items-center">
-                        <span class="mr-1">Top </span>
+                        <span class="mr-1">{{ $.T "summary.top_prefix" }} </span>
                         <input type="number" min="1" id="branch-top-picker" data-entity="6" class="top-picker bg-focused rounded-md text-center w-12" value="10">
-                        <span class="ml-1">of&nbsp;&nbsp;<span class="num-total-items" data-entity="6"></span></span>
+                        <span class="ml-1">{{ $.T "summary.of_total" }}&nbsp;&nbsp;<span class="num-total-items" data-entity="6"></span></span>
                     </div>
                 </div>
                 <canvas id="chart-branches" class="mt-2"></canvas>
@@ -180,9 +180,9 @@
                 <div class="flex justify-between">
                     <span class="font-semibold text-lg w-1/2 flex-1 whitespace-nowrap">{{ .T "summary.languages" }}</span>
                     <div class="flex justify-end flex-1 text-xs items-center">
-                        <span class="mr-1">Top </span>
+                        <span class="mr-1">{{ $.T "summary.top_prefix" }} </span>
                         <input type="number" min="1" id="language-top-picker" data-entity="3" class="top-picker bg-focused rounded-md text-center w-12" value="10">
-                        <span class="ml-1">of&nbsp;&nbsp;<span class="num-total-items" data-entity="3"></span></span>
+                        <span class="ml-1">{{ $.T "summary.of_total" }}&nbsp;&nbsp;<span class="num-total-items" data-entity="3"></span></span>
                     </div>
                 </div>
                 <canvas id="chart-language" class="mt-4"></canvas>
@@ -196,9 +196,9 @@
                 <div class="flex justify-between">
                     <span class="font-semibold text-lg w-1/2 flex-1 whitespace-nowrap">{{ .T "summary.editors" }}</span>
                     <div class="flex justify-end flex-1 text-xs items-center">
-                        <span class="mr-1">Top </span>
+                        <span class="mr-1">{{ $.T "summary.top_prefix" }} </span>
                         <input type="number" min="1" id="editor-top-picker" data-entity="2" class="top-picker bg-focused rounded-md text-center w-12" value="10">
-                        <span class="ml-1">of&nbsp;&nbsp;<span class="num-total-items" data-entity="2"></span></span>
+                        <span class="ml-1">{{ $.T "summary.of_total" }}&nbsp;&nbsp;<span class="num-total-items" data-entity="2"></span></span>
                     </div>
                 </div>
                 <canvas id="chart-editor" class="mt-4"></canvas>
@@ -216,9 +216,9 @@
                             <span class="font-semibold text-lg w-1/2 flex-1 whitespace-nowrap ml-1 cursor-pointer text-muted" onclick="swapCharts('machine', 'os')">{{ .T "summary.machines" }}</span>
                         </div>
                         <div class="flex justify-end flex-1 text-xs items-center">
-                            <span class="mr-1">Top </span>
+                            <span class="mr-1">{{ $.T "summary.top_prefix" }} </span>
                             <input type="number" min="1" id="os-top-picker" data-entity="1" class="top-picker bg-focused rounded-md text-center w-12" value="10">
-                            <span class="ml-1">of&nbsp;&nbsp;<span class="num-total-items" data-entity="1"></span></span>
+                            <span class="ml-1">{{ $.T "summary.of_total" }}&nbsp;&nbsp;<span class="num-total-items" data-entity="1"></span></span>
                         </div>
                     </div>
                     <canvas id="chart-os" class="mt-4"></canvas>
@@ -237,9 +237,9 @@
                             <span class="font-semibold text-lg w-1/2 flex-1 whitespace-nowrap ml-1 cursor-pointer">{{ .T "summary.machines" }}</span>
                         </div>
                         <div class="flex justify-end flex-1 text-xs items-center">
-                            <span class="mr-1">Top </span>
+                            <span class="mr-1">{{ $.T "summary.top_prefix" }} </span>
                             <input type="number" min="1" id="machine-top-picker" data-entity="4" class="top-picker bg-focused rounded-md text-center w-12" value="10">
-                            <span class="ml-1">of&nbsp;&nbsp;<span class="num-total-items" data-entity="4"></span></span>
+                            <span class="ml-1">{{ $.T "summary.of_total" }}&nbsp;&nbsp;<span class="num-total-items" data-entity="4"></span></span>
                         </div>
                     </div>
                     <canvas id="chart-machine" class="mt-4"></canvas>
@@ -258,9 +258,9 @@
                             <span class="iconify inline" data-icon="twemoji:gear"></span>
                         </a>
                         <div class="flex justify-end flex-1 text-xs items-center">
-                            <span class="mr-1">Top </span>
+                            <span class="mr-1">{{ $.T "summary.top_prefix" }} </span>
                             <input type="number" min="1" id="label-top-picker" data-entity="5" class="top-picker bg-focused rounded-md text-center w-12" value="10">
-                            <span class="ml-1">of&nbsp;&nbsp;<span class="num-total-items" data-entity="5"></span></span>
+                            <span class="ml-1">{{ $.T "summary.of_total" }}&nbsp;&nbsp;<span class="num-total-items" data-entity="5"></span></span>
                         </div>
                     </div>
                     <canvas id="chart-label" class="mt-4"></canvas>
@@ -275,9 +275,9 @@
                 <div class="flex justify-between">
                     <span class="font-semibold text-lg w-1/2 flex-1 whitespace-nowrap">{{ .T "summary.files" }}</span>
                     <div class="flex justify-end flex-1 text-xs items-center">
-                        <span class="mr-1">Top </span>
+                        <span class="mr-1">{{ $.T "summary.top_prefix" }} </span>
                         <input type="number" min="1" id="entity-top-picker" data-entity="7" class="top-picker bg-focused rounded-md text-center w-12" value="10">
-                        <span class="ml-1">of&nbsp;&nbsp;<span class="num-total-items" data-entity="7"></span></span>
+                        <span class="ml-1">{{ $.T "summary.of_total" }}&nbsp;&nbsp;<span class="num-total-items" data-entity="7"></span></span>
                     </div>
                 </div>
                 <canvas id="chart-entities" class="mt-4"></canvas>
@@ -297,9 +297,9 @@
                         ></span>
                     </div>
                     <div class="flex justify-end flex-1 text-xs items-center">
-                        <span class="mr-1">Top </span>
+                        <span class="mr-1">{{ $.T "summary.top_prefix" }} </span>
                         <input type="number" min="1" id="category-top-picker" data-entity="8" class="top-picker bg-focused rounded-md text-center w-12" value="10">
-                        <span class="ml-1">of&nbsp;&nbsp;<span class="num-total-items" data-entity="8"></span></span>
+                        <span class="ml-1">{{ $.T "summary.of_total" }}&nbsp;&nbsp;<span class="num-total-items" data-entity="8"></span></span>
                     </div>
                 </div>
                 <canvas id="chart-categories" class="mt-2"></canvas>
@@ -365,12 +365,12 @@
             </div>
             <h1 class="font-semibold text-3xl text-white m-0 w-full">{{ .T "summary.welcome" }}</h1>
             <p>
-                It looks like there is no data available for the specified time range. If you logged in to Wakapi for the first time, see the setup instructions below on how to get started.<br>
-                Check out <a href="settings#integrations" rel="noreferrer noopener" class="text-secondary hover:text-foreground"><i>Settings &rarr; Integrations</i></a> for instructions on how to use Wakapi and WakaTime in parallel.
+                {{ .T "summary.no_data_intro" }}<br>
+                {{ .T "summary.no_data_check_out" }} <a href="settings#integrations" rel="noreferrer noopener" class="text-secondary hover:text-foreground"><i>{{ .T "summary.no_data_settings_integrations" }}</i></a> {{ .T "summary.no_data_parallel_suffix" }}
             </p>
             {{ if gt .DataRetentionMonths 0 }}
             <p>
-                By default, Wakapi will keep your coding activity for {{ .DataRetentionMonths }} months. If you want <strong>unlimited data storage</strong> or simply <strong>support the project</strong> (which the authors would very much appreciate 😊), you can opt for a paid subscription for <strong>only 5 € / month</strong>. Go to <a href="settings#subscription" class="text-secondary hover:text-foreground" rel="noreferrer noopener">Settings → Subscription</a> to purchase one.
+                {{ printf (.T "summary.data_retention_intro") .DataRetentionMonths }} <strong>{{ .T "summary.data_retention_unlimited" }}</strong> {{ .T "summary.data_retention_or_support" }} <strong>{{ .T "summary.data_retention_support_project" }}</strong> {{ .T "summary.data_retention_appreciate" }} {{ .T "summary.data_retention_subscribe" }} <strong>{{ .T "summary.data_retention_price" }}</strong>. {{ .T "summary.data_retention_go_to" }} <a href="settings#subscription" class="text-secondary hover:text-foreground" rel="noreferrer noopener">{{ .T "summary.data_retention_settings_link" }}</a> {{ .T "summary.data_retention_purchase" }}
             </p>
             {{ end }}
             <div class="w-full pt-10 flex flex-col space-y-4">
@@ -387,7 +387,7 @@
 
                     # <strong>{{ .T "summary.step3_title" }}</strong>
                 </div>
-                <p>To track coding activity in Wakapi and WakaTime <strong>simultaneously</strong>, check <a class="text-secondary hover:text-foreground" href="https://github.com/wakatime/wakatime-cli/blob/develop/USAGE.md#api-urls-section" target="_blank" rel="noreferrer noopener">these instructions</a>.</p>
+                <p>{{ .T "summary.simultaneous_tracking" }} <strong>{{ .T "summary.simultaneous_bold" }}</strong>, {{ .T "summary.simultaneous_check" }} <a class="text-secondary hover:text-foreground" href="https://github.com/wakatime/wakatime-cli/blob/develop/USAGE.md#api-urls-section" target="_blank" rel="noreferrer noopener">{{ .T "summary.simultaneous_instructions" }}</a>.</p>
             </div>
         </div>
 

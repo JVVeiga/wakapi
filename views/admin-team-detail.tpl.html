@@ -128,7 +128,7 @@
             <h2 class="font-semibold text-red-500 mb-4">{{ .T "settings.danger_zone" }}</h2>
             <form action="admin/teams/{{ .Team.ID }}" method="post" class="inline">
                 <input type="hidden" name="action" value="delete">
-                <button type="submit" class="btn-default text-sm text-red-500 border-red-500 hover:bg-red-500 hover:text-white" onclick="return confirm('Delete team {{ .Team.Name }}? This will remove all members. This action cannot be undone.')">
+                <button type="submit" class="btn-default text-sm text-red-500 border-red-500 hover:bg-red-500 hover:text-white" onclick="return confirm('{{ printf ($.T "admin.delete_team_confirm") .Team.Name }}')">
                     {{ .T "admin.delete_team" }}
                 </button>
             </form>

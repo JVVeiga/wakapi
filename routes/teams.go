@@ -217,7 +217,7 @@ func (h *TeamsHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 		MemberSummaries: memberTotals,
 		From:            from,
 		To:              to,
-		IntervalLabel:   i18n.Translate(lang, "team_detail.last_7_days"),
+		IntervalLabel:   i18n.Translate(lang, "interval.last_7_days"),
 		IsOwner:         isOwner,
 	}
 

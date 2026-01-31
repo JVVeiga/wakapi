@@ -98,14 +98,14 @@
                 {{ if .TargetUser.IsAdmin }}
                 <form action="admin/users/{{ .TargetUser.ID }}" method="post" class="inline">
                     <input type="hidden" name="action" value="demote_admin">
-                    <button type="submit" class="btn-default text-sm" onclick="return confirm('Remove admin privileges from {{ .TargetUser.ID }}?')">
+                    <button type="submit" class="btn-default text-sm" onclick="return confirm('{{ printf ($.T "admin.demote_confirm") .TargetUser.ID }}')">
                         {{ .T "admin.demote_admin" }}
                     </button>
                 </form>
                 {{ else }}
                 <form action="admin/users/{{ .TargetUser.ID }}" method="post" class="inline">
                     <input type="hidden" name="action" value="promote_admin">
-                    <button type="submit" class="btn-primary text-sm" onclick="return confirm('Promote {{ .TargetUser.ID }} to admin?')">
+                    <button type="submit" class="btn-primary text-sm" onclick="return confirm('{{ printf ($.T "admin.promote_confirm") .TargetUser.ID }}')">
                         {{ .T "admin.promote_admin" }}
                     </button>
                 </form>

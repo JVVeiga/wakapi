@@ -82,7 +82,7 @@
 
     <div class="grow"></div>
 
-    <a href="lang?lang={{ if eq .Language "pt-BR" }}en{{ else }}pt-BR{{ end }}" class="flex items-center space-x-1 p-1 rounded hover:bg-primary-hover text-sm" title="{{ if eq .Language "pt-BR" }}English{{ else }}Português{{ end }}">
+    <a href="lang?lang={{ if eq .Language "pt-BR" }}en{{ else }}pt-BR{{ end }}" class="flex items-center space-x-1 p-1 rounded hover:bg-primary-hover text-sm" title="{{ if eq .Language "pt-BR" }}{{ .T "common.switch_to_english" }}{{ else }}{{ .T "common.switch_to_portuguese" }}{{ end }}">
         <span class="iconify inline" data-icon="mdi:translate" style="width: 18px; height: 18px"></span>
         <span>{{ if eq .Language "pt-BR" }}EN{{ else }}PT{{ end }}</span>
     </a>
@@ -100,7 +100,7 @@
             {{ end }}
         </div>
         {{ if avatarUrlTemplate }}
-        <img src="{{ .SharedLoggedInViewModel.User.AvatarURL avatarUrlTemplate }}" width="32px" class="rounded-full border-accent" alt="User Profile Avatar" title="Looks like you, doesn't it?"/>
+        <img src="{{ .SharedLoggedInViewModel.User.AvatarURL avatarUrlTemplate }}" width="32px" class="rounded-full border-accent" alt="{{ .T "common.user_avatar_alt" }}" title="{{ .T "common.avatar_tooltip" }}"/>
         {{ else }}
         <span class="iconify inline cursor-pointer text-secondary rounded-full border-accent" style="width: 32px; height: 32px" data-icon="ic:round-person" @click="state.showDropdownUser = !state.showDropdownUser" data-trigger-for="showDropdownUser"></span>
         {{ end }}

@@ -296,16 +296,16 @@
                             <div class="flex items-center">
                                 <div class="text-foreground border-1 w-full inline-block my-1 py-1 text-align text-sm"
                                      style="line-height: 1.8">
-                                    &#9656;&nbsp; All <span class="font-semibold">{{ $alias.Type | typeName }}s</span> named
+                                    &#9656;&nbsp; {{ $.T "settings.alias_all" }} <span class="font-semibold">{{ $alias.Type | typeName }}s</span> {{ $.T "settings.alias_named" }}
                                     {{ range $j, $value := $alias.Values }}
                                     <span class="chip text-accent">{{- $value -}}</span>
                                     {{ if lt $j (add (len $alias.Values) -2) }}
                                     <span class="-ml-1">{{- ", " | capitalize -}}</span>
                                     {{ else if lt $j (add (len $alias.Values) -1) }}
-                                    <span>{{- "or" -}}</span>
+                                    <span>{{- $.T "settings.alias_or" -}}</span>
                                     {{ end }}
                                     {{ end }}
-                                    are mapped to <span class="font-semibold">{{ $alias.Type | typeName }}</span> <span
+                                    {{ $.T "settings.alias_mapped_to" }} <span class="font-semibold">{{ $alias.Type | typeName }}</span> <span
                                         class="chip text-accent">{{ $alias.Key }}</span>
                                 </div>
                                 <form class="float-right" action="" method="post">
@@ -333,11 +333,11 @@
                                 <span class="mx-2">{{ .T "settings.named" }}</span>
                                 <input class="input-default"
                                        type="text" id="alias-value" style="width: 130px;"
-                                       name="value" placeholder="Original name" minlength="1" required>
+                                       name="value" placeholder="{{ .T "settings.original_name_placeholder" }}" minlength="1" required>
                                 <span class="mx-2">{{ .T "settings.to" }}</span>
                                 <input class="input-default"
                                        type="text" id="alias-key" style="width: 100px"
-                                       name="key" placeholder="Replacement" minlength="1" required>
+                                       name="key" placeholder="{{ .T "settings.replacement_placeholder" }}" minlength="1" required>
                                 <div class="flex justify-end ml-4">
                                     <button type="submit" class="btn-primary">
                                         {{ .T "common.add" }}
@@ -378,7 +378,7 @@
                                         <input type="hidden" name="key" value="{{ $label.Key }}">
                                         <input type="hidden" name="value" value="{{ $value }}">
                                         <span>{{- $value -}}</span>
-                                        <button type="submit" class="bg-background text-center hover:bg-muted rounded-full w-4 h-4 leading-none text-danger" title="Delete label">x</button>
+                                        <button type="submit" class="bg-background text-center hover:bg-muted rounded-full w-4 h-4 leading-none text-danger" title="{{ $.T "settings.delete_label" }}">x</button>
                                     </form>
                                     {{ end }}
                                     <div class="ml-3 inline">
@@ -501,7 +501,7 @@
                     <div class="w-full md:w-1/3 mb-2 md:mb-0 inline-block">
                         <span class="font-semibold text-foreground text-lg">{{ .T "settings.heartbeats_timeout" }}</span>
                         <p class="block text-sm text-muted">
-                            This parameter affects the heuristic based on which a series of consecutive heartbeats sent by your IDE are aggregated to total coding time. Please see the <i>"How are durations calculated?"</i> section in our <a class="link" href="https://github.com/muety/wakapi?tab=readme-ov-file#-faqs" rel="noreferrer noopener" target="_blank">FAQs</a> as well as the discussion in <a class="link" href="https://github.com/muety/wakapi/issues/156" rel="noreferrer noopener" target="_blank">#156</a>.
+                            {{ .T "settings.heartbeats_timeout_long_desc" }} <a class="link" href="https://github.com/muety/wakapi?tab=readme-ov-file#-faqs" rel="noreferrer noopener" target="_blank">FAQs</a> {{ .T "settings.heartbeats_timeout_long_desc_suffix" }} <a class="link" href="https://github.com/muety/wakapi/issues/156" rel="noreferrer noopener" target="_blank">#156</a>.
                         </p>
                     </div>
 
@@ -731,10 +731,10 @@
                     <div class="w-full md:w-1/2 mb-4 md:mb-0 inline-block">
                         <label class="font-semibold text-foreground text-lg" for="select-timezone">{{ .T "settings.wakatime" }}</label>
                         <span class="block text-sm text-muted">
-                            You can connect Wakapi with the official WakaTime (or another Wakapi instance, when optionally specifying a custom API URL) in a way that all heartbeats sent to Wakapi are relayed. This way, you can use both services at the same time. To get started, get <a class="link" href="https://wakatime.com/developers#authentication" rel="noopener noreferrer" target="_blank">your API key</a> and paste it here.<br><br>
-                            To forward data to another Wakapi instance, use <span class="text-xs font-mono">https://&lt;your-server&gt;/api/compat/wakatime/v1</span> as a URL.<br><br>
-                            Please note: When enabling this feature, the operators of this server will, in theory, have unlimited access to your data stored in WakaTime. If you are concerned about your privacy, please do not enable this integration or wait for OAuth 2 authentication (<a
-                                class="link" target="_blank" href="https://github.com/muety/wakapi/issues/94" rel="noopener noreferrer">#94</a>) to be implemented.
+                            {{ .T "settings.wakatime_connect_desc" }} <a class="link" href="https://wakatime.com/developers#authentication" rel="noopener noreferrer" target="_blank">{{ .T "settings.wakatime_your_api_key" }}</a> {{ .T "settings.wakatime_paste_here" }}<br><br>
+                            {{ .T "settings.wakatime_forward_desc" }} <span class="text-xs font-mono">https://&lt;your-server&gt;/api/compat/wakatime/v1</span> {{ .T "settings.wakatime_as_url" }}<br><br>
+                            {{ .T "settings.wakatime_privacy_note" }} (<a
+                                class="link" target="_blank" href="https://github.com/muety/wakapi/issues/94" rel="noopener noreferrer">#94</a>) {{ .T "settings.wakatime_privacy_note_suffix" }}
                         </span>
                     </div>
                     <div class="w-full md:w-1/2">
@@ -747,7 +747,7 @@
                         <div class="mt-2 text-foreground">
                             <input type="checkbox" name="use_legacy_importer" id="use_legacy_importer_tmp" class="mr-1 cursor-pointer">
                             <label for="use_legacy_importer_tmp" class="mx-1">{{ .T "settings.wakatime_legacy" }}</label>
-                            <span class="cursor-help" title="If WakaTime import fails repeatedly, you may want to fall back to an older, less efficient importer mechanism">&#9432;</span>
+                            <span class="cursor-help" title="{{ .T "settings.wakatime_legacy_tooltip" }}">&#9432;</span>
                         </div>
                     </div>
                 </div>
@@ -776,8 +776,8 @@
                     <div class="w-full md:w-1/2 mb-4 md:mb-0 inline-block">
                         <label class="font-semibold text-foreground text-lg" for="select-timezone">{{ .T "settings.badges" }}</label>
                         <span class="block text-sm text-muted">
-                            This integration with allows to generate badges for README pages or forums. To enable this feature, you need to grant public, unauthorized access to the respective endpoints. See <a class="link" href="settings#permissions">Permissions</a>. Adapt the URL's <i>label</i> and <i>color</i> parameters for customized badges.<br><br>
-                            In addition, there is an endpoint compatible with <a class="link" href="https://shields.io" target="_blank" rel="noreferrer noopener">Shields.IO</a> to allow for even more customization (e.g. different <a class="link" href="https://shields.io/#styles" target="_blank" rel="noreferrer noopener">styles</a>). Only available on public instances, not on localhost.
+                            {{ .T "settings.badges_instructions" }} <a class="link" href="settings#permissions">{{ .T "settings.permissions" }}</a>. {{ .T "settings.badges_customize" }}<br><br>
+                            {{ .T "settings.badges_shieldsio" }} <a class="link" href="https://shields.io" target="_blank" rel="noreferrer noopener">Shields.IO</a> {{ .T "settings.badges_shieldsio_suffix" }} <a class="link" href="https://shields.io/#styles" target="_blank" rel="noreferrer noopener">{{ .T "settings.badges_styles" }}</a>). {{ .T "settings.badges_public_only" }}
                         </span>
                     </div>
 
@@ -833,11 +833,11 @@
                     <div class="w-full md:w-1/2 mb-4 md:mb-0 inline-block">
                         <label class="font-semibold text-foreground text-lg" for="select-timezone">{{ .T "settings.readme_stats" }}</label>
                         <span class="block text-sm text-muted">
-                            Wakapi intregrates with <a class="link" href="https://github.com/anuraghazra/github-readme-stats#wakatime-week-stats" target="_blank" rel="noreferrer noopener">GitHub Readme Stats</a> to generate fancy cards for you. To enable this feature, you need to grant public, unauthorized access to the respective endpoints. See <a class="link" href="settings#permissions">Permissions</a>.<br><br>
-                            Share data for >= 7 days → weekly summary card<br>
-                            Share data for >= 366 days → yearly summary card<br>
-                            Share all data (-1) → all-time summary card<br><br>
-                            Only available on public instances, not on localhost.
+                            {{ .T "settings.readme_stats_instructions" }} <a class="link" href="https://github.com/anuraghazra/github-readme-stats#wakatime-week-stats" target="_blank" rel="noreferrer noopener">GitHub Readme Stats</a> {{ .T "settings.readme_stats_instructions_suffix" }} <a class="link" href="settings#permissions">{{ .T "settings.permissions" }}</a>.<br><br>
+                            {{ .T "settings.readme_stats_7days" }}<br>
+                            {{ .T "settings.readme_stats_366days" }}<br>
+                            {{ .T "settings.readme_stats_alltime" }}<br><br>
+                            {{ .T "settings.readme_stats_public_only" }}
                         </span>
                     </div>
 
@@ -966,7 +966,7 @@
 
                     <div class="flex gap-2 items-center justify-end">
                         <input class="appearance-none bg-card text-foreground outline-none rounded py-2 px-4 focus:bg-focused"
-                               type="text" id="api-name" name="api_name" placeholder="Key Name" minlength="1"
+                               type="text" id="api-name" name="api_name" placeholder="{{ .T "settings.key_name_placeholder" }}" minlength="1"
                                maxlength="64" required>
                         <select autocomplete="off" id="api-readonly" name="api_readonly" class="select-default grow">
                             <option value="false" class="cursor-pointer">{{ .T "settings.read_write" }}</option>

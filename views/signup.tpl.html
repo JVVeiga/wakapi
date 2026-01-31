@@ -41,7 +41,7 @@
 
             <div class="flex space-x-4">
                 <div class="mt-1">
-                    <img v-cloak id="avatar" :src="avatarUrl" width="96px" class="rounded-full border-4 border-accent cursor-pointer" alt="User Profile Avatar" title="Your Avatar"/>
+                    <img v-cloak id="avatar" :src="avatarUrl" width="96px" class="rounded-full border-4 border-accent cursor-pointer" alt="{{ .T "common.user_avatar_alt" }}" title="{{ .T "common.your_avatar" }}"/>
                 </div>
 
                 <div>
@@ -74,7 +74,7 @@
             </div>
             {{ if .CaptchaId }}
             <div class="mb-4 flex">
-                <img id="captchaimage" src="api/captcha/{{.CaptchaId}}.png" class="rounded-md" style="max-height: 64px; background: rgba(255, 255, 255, 0.75)" alt="Captcha image">
+                <img id="captchaimage" src="api/captcha/{{.CaptchaId}}.png" class="rounded-md" style="max-height: 64px; background: rgba(255, 255, 255, 0.75)" alt="{{ .T "common.captcha_image_alt" }}">
                 <div class="flex-grow flex-col ml-4">
                     <input class="input-default"
                            v-model="captcha"

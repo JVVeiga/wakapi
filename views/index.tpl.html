@@ -44,15 +44,15 @@
         </div>
 
         <p class="text-center text-secondary text-md mt-4 mb-4">
-            This system has tracked a total of </span>
+            {{ .T "index.tracked_total_prefix" }}
             {{ range $d := .TotalHours | printf "%d" | toRunes }}
-            <span class="bg-background rounded-sm p-1 border border-muted/50 font-mono text-secondary" style="margin: auto -1px;" title="{{ $.TotalHours }} hours (updated every hour)">{{ $d }}</span>
+            <span class="bg-background rounded-sm p-1 border border-muted/50 font-mono text-secondary" style="margin: auto -1px;" title="{{ $.TotalHours }} {{ $.T "index.hours_tooltip" }}">{{ $d }}</span>
             {{ end }}
-            <span class="mx-1">hours of coding from</span>
+            <span class="mx-1">{{ .T "index.hours_of_coding_from" }}</span>
             {{ range $d := .TotalUsers | printf "%d" | toRunes }}
-            <span class="bg-background rounded-sm p-1 border border-muted/50 font-mono text-secondary" style="margin: auto -1px;" title="{{ $.TotalUsers }} users (updated every hour)">{{ $d }}</span>
+            <span class="bg-background rounded-sm p-1 border border-muted/50 font-mono text-secondary" style="margin: auto -1px;" title="{{ $.TotalUsers }} {{ $.T "index.users_tooltip" }}">{{ $d }}</span>
             {{ end }}
-            <span class="ml-1">users.</span>
+            <span class="ml-1">{{ .T "index.users_suffix" }}</span>
         </p>
 
         <div id="online-indicator" class="text-center text-secondary text-md font-semibold flex justify-center items-center gap-2">
@@ -78,7 +78,7 @@
                     <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_wakatime" }}</li>
                     <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_prometheus" }}</li>
                     <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_fast" }}</li>
-                    <li title="Wakapi.dev is hosted in Germany, none of your data will leave the EU"><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_gdpr" }}</li>
+                    <li title="{{ .T "index.feature_gdpr_tooltip" }}"><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_gdpr" }}</li>
                     <li><span class="iconify inline text-accent" data-icon="eva:checkmark-circle-2-fill"></span> &nbsp; {{ .T "index.feature_selfhosted" }}</li>
                 </ul>
             </div>

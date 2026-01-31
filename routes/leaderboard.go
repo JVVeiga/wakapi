@@ -11,6 +11,7 @@ import (
 	routeutils "github.com/muety/wakapi/routes/utils"
 	"github.com/muety/wakapi/services"
 	"github.com/muety/wakapi/utils"
+	"github.com/muety/wakapi/views/i18n"
 	"net/http"
 	"strings"
 )
@@ -60,6 +61,7 @@ func (h *LeaderboardHandler) GetIndex(w http.ResponseWriter, r *http.Request) {
 
 func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWriter) *view.LeaderboardViewModel {
 	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
 	tabParam := strings.ToLower(r.URL.Query().Get("tab"))
 	byParam := strings.ToLower(r.URL.Query().Get("by"))
 	keyParam := strings.ToLower(r.URL.Query().Get("key"))
@@ -106,7 +108,7 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 			Tab:           tab,
 			TeamItems:     teamItems,
 			UserTeamIDs:   userTeamIDs,
-			IntervalLabel: h.leaderboardService.GetDefaultScope().GetHumanReadable(),
+			IntervalLabel: i18n.Translate(lang, h.leaderboardService.GetDefaultScope().GetI18nKey()),
 			PageParams:    pageParams,
 		}
 		return routeutils.WithSessionMessages(vm, r, w)
@@ -202,7 +204,7 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 		MemberDashboardLinks: memberDashboardLinks,
 		UserLanguages:        userLanguages,
 		TopKeys:              topKeys,
-		IntervalLabel:        h.leaderboardService.GetDefaultScope().GetHumanReadable(),
+		IntervalLabel:        i18n.Translate(lang, h.leaderboardService.GetDefaultScope().GetI18nKey()),
 		PageParams:           pageParams,
 	}
 	return routeutils.WithSessionMessages(vm, r, w)
