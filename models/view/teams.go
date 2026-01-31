@@ -15,6 +15,7 @@ type TeamsViewModel struct {
 type MemberSummaryItem struct {
 	UserID    string
 	TotalTime time.Duration
+	Role      string
 }
 
 type TeamDetailViewModel struct {

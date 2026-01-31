@@ -64,6 +64,7 @@ func (h *TeamsHandler) RegisterRoutes(router chi.Router) {
 	r.Get("/", h.GetIndex)
 	r.Get("/{id}", h.GetTeamDetail)
 	r.Get("/{id}/members/{userID}", h.GetMemberSummary)
+	r.Post("/{id}/members/remove", h.PostRemoveMember)
 
 	router.Mount("/teams", r)
 }
@@ -173,6 +174,7 @@ func (h *TeamsHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 		memberTotals = append(memberTotals, &view.MemberSummaryItem{
 			UserID:    member.UserID,
 			TotalTime: summary.TotalTime(),
+			Role:      member.Role,
 		})
 	}
 
@@ -395,6 +397,34 @@ func (h *TeamsHandler) fetchSplitSummaries(params *models.SummaryParams) ([]*mod
 		summaries = append(summaries, curSummary)
 	}
 	return summaries, nil
+}
+
+func (h *TeamsHandler) PostRemoveMember(w http.ResponseWriter, r *http.Request) {
+	user := middlewares.GetPrincipal(r)
+	teamID := strings.TrimSpace(chi.URLParam(r, "id"))
+	userID := strings.TrimSpace(r.FormValue("user_id"))
+	lang := routeutils.ResolveLanguage(r, user)
+
+	if teamID == "" || userID == "" {
+		http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	isOwner, _ := h.teamSrvc.IsTeamOwner(teamID, user.ID)
+	if !user.IsAdmin && !isOwner {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_team_owner"))
+		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
+		return
+	}
+
+	if err := h.teamSrvc.RemoveMember(teamID, userID); err != nil {
+		conf.Log().Request(r).Error("failed to remove team member", "error", err)
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.member_remove_failed"))
+	} else {
+		routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.member_removed"))
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
 }
 
 func (h *TeamsHandler) extractAvailableFilters(summary *models.Summary) view.AvailableFilters {

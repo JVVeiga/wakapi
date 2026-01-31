@@ -398,6 +398,10 @@
   "team_detail.editors": "Editores",
   "team_detail.operating_systems": "Sistemas Operacionais",
   "team_detail.member_activity": "Atividade dos Membros",
+  "team_detail.remove_member": "Remover membro",
+  "team_detail.confirm_remove_member": "Tem certeza que deseja remover este membro do time?",
+
+  "flash.not_team_owner": "Apenas o dono do time pode realizar esta ação",
 
   "admin.dashboard": "Painel Administrativo",
   "admin.total_users": "Total de Usuários",

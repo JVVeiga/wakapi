@@ -398,6 +398,10 @@
   "team_detail.editors": "Editors",
   "team_detail.operating_systems": "Operating Systems",
   "team_detail.member_activity": "Member Activity",
+  "team_detail.remove_member": "Remove member",
+  "team_detail.confirm_remove_member": "Are you sure you want to remove this member from the team?",
+
+  "flash.not_team_owner": "Only team owners can perform this action",
 
   "admin.dashboard": "Admin Dashboard",
   "admin.total_users": "Total Users",

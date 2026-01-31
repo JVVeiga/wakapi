@@ -110,12 +110,27 @@
         <ol class="space-y-3 mb-8">
             {{ range .MemberSummaries }}
             <li class="px-4 py-3 rounded-md border-2 border-muted flex items-center justify-between">
-                {{ if or $.IsOwner $.SharedLoggedInViewModel.User.IsAdmin }}
-                <a href="teams/{{ $.Team.ID }}/members/{{ .UserID }}" class="text-foreground font-semibold font-mono truncate hover:text-primary hover:underline">{{ .UserID }}</a>
-                {{ else }}
-                <span class="text-foreground font-semibold font-mono truncate">{{ .UserID }}</span>
-                {{ end }}
-                <span class="text-muted text-sm">{{ duration .TotalTime }}</span>
+                <div class="flex items-center truncate">
+                    {{ if or $.IsOwner $.SharedLoggedInViewModel.User.IsAdmin }}
+                    <a href="teams/{{ $.Team.ID }}/members/{{ .UserID }}" class="text-foreground font-semibold font-mono truncate hover:text-primary hover:underline">{{ .UserID }}</a>
+                    {{ else }}
+                    <span class="text-foreground font-semibold font-mono truncate">{{ .UserID }}</span>
+                    {{ end }}
+                    {{ if eq .Role "owner" }}
+                    <span class="ml-2 text-xs bg-primary text-white px-1.5 py-0.5 rounded">owner</span>
+                    {{ end }}
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-muted text-sm">{{ duration .TotalTime }}</span>
+                    {{ if and (or $.IsOwner $.SharedLoggedInViewModel.User.IsAdmin) (ne .Role "owner") }}
+                    <form method="POST" action="teams/{{ $.Team.ID }}/members/remove" onsubmit="return confirm('{{ $.T "team_detail.confirm_remove_member" }}')">
+                        <input type="hidden" name="user_id" value="{{ .UserID }}">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-sm" title="{{ $.T "team_detail.remove_member" }}">
+                            <span class="iconify inline" data-icon="mdi:close" style="width: 16px; height: 16px"></span>
+                        </button>
+                    </form>
+                    {{ end }}
+                </div>
             </li>
             {{ end }}
         </ol>
