@@ -1,3 +1,14 @@
+# Stage 1: Build frontend assets (Tailwind CSS + Iconify icons)
+FROM node:20-alpine AS frontend
+WORKDIR /src
+COPY package.json ./
+COPY scripts/ ./scripts/
+COPY static/ ./static/
+COPY views/ ./views/
+COPY tailwind.config.js ./
+RUN npm install && npm run build
+
+# Stage 2: Build Go binary
 FROM --platform=$BUILDPLATFORM golang:alpine AS build-env
 WORKDIR /src
 
@@ -7,6 +18,10 @@ RUN wget "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-fo
 COPY ./go.mod ./go.sum ./
 RUN go mod download
 COPY . .
+
+# Overwrite dist assets with freshly built ones from frontend stage
+COPY --from=frontend /src/static/assets/css/app.dist.css static/assets/css/app.dist.css
+COPY --from=frontend /src/static/assets/js/icons.dist.js static/assets/js/icons.dist.js
 
 ARG TARGETOS
 ARG TARGETARCH
