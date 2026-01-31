@@ -10,6 +10,7 @@ server:
   public_url: http://localhost:3000
 
 app:
+  default_language: en
   aggregation_time: '02:15'
   report_time_weekly: 'fri,18:00'
   heartbeat_max_age: 168h  # 1 week
