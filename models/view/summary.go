@@ -23,6 +23,13 @@ type SummaryViewModel struct {
 	RawQuery            string
 	UserFirstData       time.Time
 	DataRetentionMonths int
+	TeamContext         *TeamMemberViewContext
+}
+
+type TeamMemberViewContext struct {
+	TeamID   string
+	TeamName string
+	MemberID string
 }
 
 type AvailableFilters struct {
@@ -114,6 +121,24 @@ func NewHourlyBreakdownViewModel(items HourlyBreakdownItems) HourlyBreakdownsVie
 	})
 
 	return hourlyBreakdownSorted
+}
+
+func (s SummaryViewModel) IsTeamMemberView() bool {
+	return s.TeamContext != nil
+}
+
+func (s SummaryViewModel) DashboardUserID() string {
+	if s.TeamContext != nil {
+		return s.TeamContext.MemberID
+	}
+	return s.SharedLoggedInViewModel.User.ID
+}
+
+func (s SummaryViewModel) DashboardUserHasData() bool {
+	if s.TeamContext != nil {
+		return true
+	}
+	return s.SharedLoggedInViewModel.User.HasData
 }
 
 func (s SummaryViewModel) UserDataExpiring() bool {

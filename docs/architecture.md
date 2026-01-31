@@ -93,7 +93,7 @@ wakapi/
 │   ├── projects.go              # Página de projetos
 │   ├── leaderboard.go           # Leaderboard (requer autenticação)
 │   ├── admin.go                 # Painel administrativo (requer IsAdmin)
-│   ├── teams.go                 # Painel de times (métricas agregadas)
+│   ├── teams.go                 # Painel de times (métricas agregadas + dashboard individual de membros)
 │   ├── subscription.go          # Assinatura Stripe
 │   ├── imprint.go               # Página de impressum
 │   ├── setup.go                 # Onboarding

@@ -11,7 +11,7 @@ function TimePicker({ fromDate, toDate, timeSelection }) {
         intervalLink(interval) {
             const queryParams = new URLSearchParams(window.location.search)
             queryParams.set('interval', interval)
-            return `summary?${queryParams.toString()}`
+            return `${window.location.pathname}?${queryParams.toString()}`
         },
         onDateUpdated() {
             document.getElementById('time-picker-form').submit()

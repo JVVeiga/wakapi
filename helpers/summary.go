@@ -10,7 +10,10 @@ import (
 )
 
 func ParseSummaryParams(r *http.Request) (*models.SummaryParams, error) {
-	user := extractUser(r)
+	return ParseSummaryParamsForUser(r, extractUser(r))
+}
+
+func ParseSummaryParamsForUser(r *http.Request, user *models.User) (*models.SummaryParams, error) {
 	params := r.URL.Query()
 
 	var err error

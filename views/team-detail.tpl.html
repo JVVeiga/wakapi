@@ -110,7 +110,11 @@
         <ol class="space-y-3 mb-8">
             {{ range .MemberSummaries }}
             <li class="px-4 py-3 rounded-md border-2 border-muted flex items-center justify-between">
+                {{ if or $.IsOwner $.SharedLoggedInViewModel.User.IsAdmin }}
+                <a href="teams/{{ $.Team.ID }}/members/{{ .UserID }}" class="text-foreground font-semibold font-mono truncate hover:text-primary hover:underline">{{ .UserID }}</a>
+                {{ else }}
                 <span class="text-foreground font-semibold font-mono truncate">{{ .UserID }}</span>
+                {{ end }}
                 <span class="text-muted text-sm">{{ duration .TotalTime }}</span>
             </li>
             {{ end }}

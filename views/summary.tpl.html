@@ -13,14 +13,24 @@
 
 {{ template "alerts.tpl.html" . }}
 
-{{ if and .Summary .SharedLoggedInViewModel.User.HasData }}
+{{ if .IsTeamMemberView }}
+<div class="w-full mt-10 mb-4 p-4 rounded-md bg-card border-2 border-accent flex items-center justify-between">
+    <div class="flex items-center">
+        <a href="teams/{{ .TeamContext.TeamID }}" class="text-primary hover:underline mr-4">&larr; Back to team</a>
+        <span class="text-foreground font-semibold">Viewing dashboard for: <span class="font-mono">{{ .TeamContext.MemberID }}</span></span>
+    </div>
+    <span class="text-sm text-muted">Team: {{ .TeamContext.TeamName }}</span>
+</div>
+{{ end }}
+
+{{ if and .Summary .DashboardUserHasData }}
 {{ template "time-picker.tpl.html" . }}
 {{ template "entity-filter.tpl.html" . }}
 {{ end }}
 
 {{ if .Summary }}
 
-<div id="summary-page" class="grow" v-scope @vue:mounted="mounted({ userId: '{{ .SharedLoggedInViewModel.User.ID }}'})">
+<div id="summary-page" class="grow" v-scope @vue:mounted="mounted({ userId: '{{ .DashboardUserID }}'})">
     <div class="flex justify-end md:space-x-8 mt-12 flex-wrap md:flex-nowrap relative items-center no-print">
         {{ if $.UserDataExpiring }}
         <div class="flex-grow justify-start">
@@ -72,7 +82,7 @@
 
     <main class="flex flex-col items-center mt-4 md:mt-16 grow">
 
-        {{ if .SharedLoggedInViewModel.User.HasData }}
+        {{ if .DashboardUserHasData }}
 
         {{ if not .IsProjectDetails }}
         <!-- KPIs -->
@@ -116,7 +126,7 @@
         <div class="flex space-x-4 items-center">
             <h4 class="font-semibold text-lg text-muted">{{ .TotalTime | duration }}</h4>
             <div v-cloak v-show="currentInterval">
-                <img :src="'api/badge/{{ .SharedLoggedInViewModel.User.ID }}/interval:' + currentInterval + '/project:{{ .GetProjectFilter }}'" alt="Coding Time Badge">
+                <img :src="'api/badge/{{ .DashboardUserID }}/interval:' + currentInterval + '/project:{{ .GetProjectFilter }}'" alt="Coding Time Badge">
             </div>
         </div>
         </div>
@@ -329,7 +339,7 @@
         <div class="mt-12 flex flex-col space-y-2 text-foreground w-full no-break">
             <div class="flex justify-start space-x-2 items-center">
                 <h2 class="text-lg font-semibold">Activity</h2>
-                <a v-cloak v-show="activityChartSvg" href="/api/activity/chart/{{ .SharedLoggedInViewModel.User.ID }}.svg" target="_blank" rel="noreferrer noopener" class="p-1 rounded hover:bg-card" title="Share...">
+                <a v-cloak v-show="activityChartSvg" href="/api/activity/chart/{{ .DashboardUserID }}.svg" target="_blank" rel="noreferrer noopener" class="p-1 rounded hover:bg-card" title="Share...">
                     <span class="iconify inline text-xl text-muted p-px" data-icon="octicon:share-16"></span>
                 </a>
             </div>
