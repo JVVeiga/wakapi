@@ -54,9 +54,13 @@
                     <div class="flex flex-grow mx-1 justify-start items-center space-x-4 align-middle">
                         <span class="iconify inline text-secondary" style="width: 24px; height: 24px" data-icon="mdi:account-group"></span>
                         <div>
+                            {{ if $.CanAccessTeam $item.TeamID }}
                             <a href="teams/{{ $item.TeamID }}" class="hover:text-primary hover:underline">
                                 <strong class="text-ellipsis truncate">{{ $item.TeamName }}</strong>
                             </a>
+                            {{ else }}
+                            <strong class="text-ellipsis truncate">{{ $item.TeamName }}</strong>
+                            {{ end }}
                             <span class="text-sm text-muted ml-2">{{ $item.MemberCount }} members</span>
                         </div>
                     </div>

@@ -19,17 +19,19 @@ type LeaderboardHandler struct {
 	config             *conf.Config
 	userService        services.IUserService
 	leaderboardService services.ILeaderboardService
+	teamService        services.ITeamService
 }
 
 var allowedAggregations = map[string]uint8{
 	"language": models.SummaryLanguage,
 }
 
-func NewLeaderboardHandler(userService services.IUserService, leaderboardService services.ILeaderboardService) *LeaderboardHandler {
+func NewLeaderboardHandler(userService services.IUserService, leaderboardService services.ILeaderboardService, teamService services.ITeamService) *LeaderboardHandler {
 	return &LeaderboardHandler{
 		config:             conf.Get(),
 		userService:        userService,
 		leaderboardService: leaderboardService,
+		teamService:        teamService,
 	}
 }
 
@@ -87,6 +89,15 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 			}
 		}
 
+		userTeamIDs := make(map[string]bool)
+		if user != nil {
+			if teams, err := h.teamService.GetByUser(user.ID); err == nil {
+				for _, t := range teams {
+					userTeamIDs[t.ID] = true
+				}
+			}
+		}
+
 		vm := &view.LeaderboardViewModel{
 			SharedLoggedInViewModel: view.SharedLoggedInViewModel{
 				SharedViewModel: view.NewSharedViewModel(h.config, nil),
@@ -94,6 +105,7 @@ func (h *LeaderboardHandler) buildViewModel(r *http.Request, w http.ResponseWrit
 			},
 			Tab:           tab,
 			TeamItems:     teamItems,
+			UserTeamIDs:   userTeamIDs,
 			IntervalLabel: h.leaderboardService.GetDefaultScope().GetHumanReadable(),
 			PageParams:    pageParams,
 		}

@@ -252,7 +252,7 @@ func main() {
 	loginHandler := routes.NewLoginHandler(userService, mailService, keyValueService)
 	imprintHandler := routes.NewImprintHandler(keyValueService)
 	setupHandler := routes.NewSetupHandler(userService)
-	leaderboardHandler := condition.Ternary[bool, routes.Handler](config.App.LeaderboardEnabled, routes.NewLeaderboardHandler(userService, leaderboardService), routes.NewNoopHandler())
+	leaderboardHandler := condition.Ternary[bool, routes.Handler](config.App.LeaderboardEnabled, routes.NewLeaderboardHandler(userService, leaderboardService, teamService), routes.NewNoopHandler())
 	adminHandler := routes.NewAdminHandler(userService, heartbeatService, summaryService, apiKeyService, teamService)
 	teamsHandler := routes.NewTeamsHandler(userService, teamService, summaryService, heartbeatService, durationService, aliasService)
 	miscHandler := routes.NewMiscHandler(userService)

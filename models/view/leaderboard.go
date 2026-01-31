@@ -13,6 +13,7 @@ type LeaderboardViewModel struct {
 	Tab           string
 	Items         []*models.LeaderboardItemRanked
 	TeamItems     []*models.TeamLeaderboardItemRanked
+	UserTeamIDs   map[string]bool
 	TopKeys       []string
 	UserLanguages map[string][]string
 	IntervalLabel string
@@ -56,6 +57,13 @@ func (s *LeaderboardViewModel) ColorModifierTeam(item *models.TeamLeaderboardIte
 		return "bronze"
 	}
 	return "default"
+}
+
+func (s *LeaderboardViewModel) CanAccessTeam(teamID string) bool {
+	if s.User != nil && s.User.IsAdmin {
+		return true
+	}
+	return s.UserTeamIDs[teamID]
 }
 
 func (s *LeaderboardViewModel) LangIcon(lang string) string {
