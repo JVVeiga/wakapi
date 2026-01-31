@@ -27,8 +27,8 @@ tests {
   const moment = require('moment')
   
   test("Correct time zone", function () {
-      // when it was midnight in UTC+3, it was still 11 pm in Germany
-      const targetDateTz = moment(`2021-05-28T00:00:00${bru.getCollectionVar('TZ_OFFSET')}`).add(-1, 'h')
+      // when it was midnight in UTC+3, it was still 9 pm in UTC (3h difference)
+      const targetDateTz = moment(`2021-05-28T00:00:00${bru.getCollectionVar('TZ_OFFSET')}`).add(-3, 'h')
       expect(moment(res.body.from).isSame(targetDateTz)).to.eql(true)
       expect(moment(res.body.to).isSame(targetDateTz)).to.eql(true)
   });
