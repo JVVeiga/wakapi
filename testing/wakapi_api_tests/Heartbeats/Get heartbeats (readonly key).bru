@@ -24,7 +24,10 @@ assert {
 
 tests {
   test("Response body is correct", function () {
-      const date = new Date(bru.getVar('yesterdayDateIso'))
+      // compute expected start: midnight of yesterdayDate in user's timezone, as UTC
+      const [y, m, d] = bru.getVar('yesterdayDate').split('-').map(Number)
+      const utcOffset = parseInt(bru.getVar('utcOffset'))
+      const date = new Date(Date.UTC(y, m - 1, d) - utcOffset * 60 * 1000)
       expect(res.body.timezone).to.eql(bru.getCollectionVar('TZ'));
       expect(new Date(res.body.start)).to.eql(date);
       expect(new Date(res.body.end)).to.eql(new Date(date.getTime() + 3600 * 1000 * 24 - 1000));
