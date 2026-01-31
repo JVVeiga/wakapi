@@ -632,6 +632,7 @@
   "invite.go_to_team": "Go to Team",
   "invite.invalid": "This invite link is invalid or has expired.",
   "invite.accepted": "You have joined the team!",
+  "invite.invited_by": "Invited by",
   "flash.invite_link_generated": "Invite link generated successfully",
   "flash.invite_generation_failed": "Failed to generate invite",
   "flash.invite_accept_failed": "Failed to accept invite",

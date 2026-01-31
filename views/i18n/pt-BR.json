@@ -632,6 +632,7 @@
   "invite.go_to_team": "Ir para o Time",
   "invite.invalid": "Este link de convite é inválido ou expirou.",
   "invite.accepted": "Você entrou no time!",
+  "invite.invited_by": "Convidado por",
   "flash.invite_link_generated": "Link de convite gerado com sucesso",
   "flash.invite_generation_failed": "Falha ao gerar convite",
   "flash.invite_accept_failed": "Falha ao aceitar convite",

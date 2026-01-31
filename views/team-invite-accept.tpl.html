@@ -8,44 +8,52 @@
 {{ template "menu-main.tpl.html" . }}
 {{ template "alerts.tpl.html" . }}
 
-<main class="mt-10 grow flex justify-center w-full">
-    <div class="flex flex-col grow mt-10 max-available items-center">
-        <div class="w-full max-w-md">
-            <h1 class="h1 mb-8 text-center">{{ .T "invite.accept_title" }}</h1>
-
-            {{ if .AlreadyMember }}
-            <div class="bg-card rounded-md p-4 px-6 border-2 border-accent text-center">
-                <p class="text-foreground font-semibold mb-4">{{ .T "invite.already_member" }}</p>
-                <a href="teams/{{ .Team.ID }}" class="btn-primary text-sm">{{ .T "invite.go_to_team" }}</a>
+<main class="mt-10 grow flex justify-center items-center w-full">
+    <div class="max-w-sm mx-auto" style="width: 24rem;">
+        {{ if .AlreadyMember }}
+        <div class="bg-card rounded-lg p-8 pt-4 border-2 border-muted text-center">
+            <div class="flex justify-center mb-5">
+                <div class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="iconify text-primary" data-icon="eva:checkmark-circle-2-fill" style="font-size: 2rem"></span>
+                </div>
             </div>
-            {{ else }}
-            <div class="bg-card rounded-md p-4 px-6 border-2 border-muted">
-                <p class="text-muted mb-4">{{ .T "invite.accept_info" }}</p>
-                <dl class="space-y-3 text-sm mb-6">
-                    <div class="flex justify-between">
-                        <dt class="text-muted">{{ .T "common.name" }}</dt>
-                        <dd class="text-foreground font-semibold">{{ .Team.Name }}</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-muted">{{ .T "common.owner" }}</dt>
-                        <dd class="text-foreground">{{ .Team.OwnerID }}</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-muted">{{ .T "common.members" }}</dt>
-                        <dd class="text-foreground">{{ .MemberCount }}</dd>
-                    </div>
-                    {{ if .Team.Description }}
-                    <div class="pt-3 border-t border-muted">
-                        <p class="text-muted">{{ .Team.Description }}</p>
-                    </div>
-                    {{ end }}
-                </dl>
-                <form action="teams/invite/{{ .Invite.Code }}" method="post" class="text-center">
-                    <button type="submit" class="btn-primary">{{ .T "invite.accept_button" }}</button>
-                </form>
-            </div>
-            {{ end }}
+            <h1 class="text-xl font-bold text-foreground mb-2">{{ .Team.Name }}</h1>
+            <p class="text-muted text-sm mb-6">{{ .T "invite.already_member" }}</p>
+            <a href="teams/{{ .Team.ID }}" class="btn-primary block w-full text-center">{{ .T "invite.go_to_team" }}</a>
         </div>
+        {{ else }}
+        <div class="bg-card rounded-lg p-8 pt-4 border-2 border-muted text-center">
+            <div class="flex justify-center mb-5">
+                <div class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="iconify text-primary" data-icon="mdi:invite" style="font-size: 2rem"></span>
+                </div>
+            </div>
+            <p class="text-muted text-sm mb-2">{{ .T "invite.accept_info" }}</p>
+            <h1 class="text-xl font-bold text-foreground mb-6">{{ .Team.Name }}</h1>
+
+            <div class="flex justify-center gap-6 text-sm text-muted mb-6">
+                <div class="flex flex-col items-center gap-1">
+                    <span class="text-foreground font-semibold text-lg">{{ .MemberCount }}</span>
+                    <span>{{ .T "common.members" }}</span>
+                </div>
+                <div class="w-px bg-muted/30"></div>
+                <div class="flex flex-col items-center gap-1">
+                    <span class="text-foreground font-semibold text-lg truncate max-w-[120px]" title="{{ .Team.OwnerID }}">{{ .Team.OwnerID }}</span>
+                    <span>{{ .T "common.owner" }}</span>
+                </div>
+            </div>
+
+            {{ if .Team.Description }}
+            <p class="text-muted text-sm mb-6 border-t border-muted/30 pt-4">{{ .Team.Description }}</p>
+            {{ end }}
+
+            <p class="text-xs text-muted mb-6">{{ .T "invite.invited_by" }} {{ .Invite.CreatedBy }}</p>
+
+            <form action="teams/invite/{{ .Invite.Code }}" method="post">
+                <button type="submit" class="btn-primary w-full">{{ .T "invite.accept_button" }}</button>
+            </form>
+        </div>
+        {{ end }}
     </div>
 </main>
 
