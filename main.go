@@ -233,7 +233,7 @@ func main() {
 	metricsHandler := api.NewMetricsHandler(userService, summaryService, heartbeatService, leaderboardService, keyValueService, metricsRepository)
 	diagnosticsHandler := api.NewDiagnosticsApiHandler(userService, diagnosticsService)
 	avatarHandler := api.NewAvatarHandler()
-	activityHandler := api.NewActivityApiHandler(userService, activityService)
+	activityHandler := api.NewActivityApiHandler(userService, activityService, teamService)
 	badgeHandler := api.NewBadgeHandler(userService, summaryService)
 	captchaHandler := api.NewCaptchaHandler()
 

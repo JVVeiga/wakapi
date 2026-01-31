@@ -24,12 +24,14 @@ type ActivityApiHandler struct {
 	config          *conf.Config
 	userService     services.IUserService
 	activityService services.IActivityService
+	teamService     services.ITeamService
 }
 
-func NewActivityApiHandler(userService services.IUserService, activityService services.IActivityService) *ActivityApiHandler {
+func NewActivityApiHandler(userService services.IUserService, activityService services.IActivityService, teamService services.ITeamService) *ActivityApiHandler {
 	return &ActivityApiHandler{
 		activityService: activityService,
 		userService:     userService,
+		teamService:     teamService,
 		config:          conf.Get(),
 	}
 }
@@ -63,7 +65,7 @@ func (h *ActivityApiHandler) GetActivityChart(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if authorizedUser == nil || authorizedUser.ID != requestedUser.ID {
+	if authorizedUser == nil || (authorizedUser.ID != requestedUser.ID && !authorizedUser.IsAdmin && !h.isTeamOwnerOf(authorizedUser.ID, requestedUser.ID)) {
 		if !requestedUser.ShareActivityChart {
 			w.WriteHeader(http.StatusForbidden)
 			return
@@ -84,4 +86,18 @@ func (h *ActivityApiHandler) GetActivityChart(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Cache-Control", "max-age=21600") // 6 hours
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(chart))
+}
+
+// isTeamOwnerOf checks if ownerID is the owner of any team that memberID belongs to.
+func (h *ActivityApiHandler) isTeamOwnerOf(ownerID, memberID string) bool {
+	teams, err := h.teamService.GetByUser(memberID)
+	if err != nil {
+		return false
+	}
+	for _, team := range teams {
+		if isOwner, _ := h.teamService.IsTeamOwner(team.ID, ownerID); isOwner {
+			return true
+		}
+	}
+	return false
 }
