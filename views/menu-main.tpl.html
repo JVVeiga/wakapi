@@ -1,7 +1,7 @@
 <script type="module" src="assets/js/components/menu-main.js"></script>
 
-<div class="flex justify-between space-x-4 items-center relative flex-wrap sm:flex-nowrap no-print" id="main-menu" v-scope @vue:mounted="mounted">
-    <div class="mr-8 hidden lg:inline-block shrink-0">
+<div class="flex justify-between space-x-2 xl:space-x-4 items-center relative flex-wrap sm:flex-nowrap no-print" id="main-menu" v-scope @vue:mounted="mounted">
+    <div class="mr-8 hidden xl:inline-block shrink-0">
     {{ template "logo.tpl.html" }}
     </div>
 
@@ -29,7 +29,7 @@
 
     <div class="menu-item relative" @click="state.showDropdownResources = !state.showDropdownResources" data-trigger-for="showDropdownResources">
         <span class="iconify inline text-2xl text-secondary" data-icon="ph:books-bold"></span>
-        <a class="text-secondary hidden lg:inline-block">{{ .T "nav.resources" }}</a>
+        <a class="text-secondary hidden xl:inline-block">{{ .T "nav.resources" }}</a>
         <span class="iconify inline text-xl text-secondary" data-icon="akar-icons:chevron-down"></span>
 
         <div v-cloak v-show="state.showDropdownResources" class="flex bg-card shadow-md z-10 p-2 absolute top-0 right-0 rounded popup mt-12 w-max" id="resources-menu-dropdown" style="min-width: 160px">
@@ -70,13 +70,13 @@
 
     <a class="menu-item" href="settings">
         <span class="iconify inline text-2xl text-secondary" data-icon="ci:settings-filled"></span>
-        <span class="text-secondary hidden lg:inline-block">{{ .T "nav.settings" }}</span>
+        <span class="text-secondary hidden xl:inline-block">{{ .T "nav.settings" }}</span>
     </a>
 
     {{ if .SharedLoggedInViewModel.User.IsAdmin }}
     <a class="menu-item" href="admin">
         <span class="iconify inline text-2xl text-secondary" data-icon="ri:admin-fill"></span>
-        <span class="text-secondary hidden lg:inline-block">{{ .T "nav.admin" }}</span>
+        <span class="text-secondary hidden xl:inline-block">{{ .T "nav.admin" }}</span>
     </a>
     {{ end }}
 
