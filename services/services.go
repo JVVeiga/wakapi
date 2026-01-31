@@ -176,6 +176,7 @@ type IUserService interface {
 	SetWakatimeApiCredentials(*models.User, string, string) (*models.User, error)
 	GenerateResetToken(*models.User) (*models.User, error)
 	GenerateUnsubscribeToken(*models.User) (*models.User, error)
+	LinkOidc(*models.User, string, string) error
 	FlushCache()
 	FlushUserCache(string)
 }

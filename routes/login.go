@@ -464,6 +464,28 @@ func (h *LoginHandler) GetOidcCallback(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.userSrvc.GetUserByOidc(provider.Name, idTokenPayload.Subject)
 	if err != nil {
+		// try to link to existing user by verified email
+		if idTokenPayload.EmailVerified && idTokenPayload.Email != "" {
+			if existingUser, emailErr := h.userSrvc.GetUserByEmail(idTokenPayload.Email); emailErr == nil {
+				if linkErr := h.userSrvc.LinkOidc(existingUser, provider.Name, idTokenPayload.Subject); linkErr != nil {
+					conf.Log().Request(r).Error("failed to link oidc to existing user", "error", linkErr)
+					routeutils.SetError(r, w, i18n.Translate(lang, "flash.oidc_link_failed"))
+					http.Redirect(w, r, fmt.Sprintf("%s/login", h.config.Server.BasePath), http.StatusFound)
+					return
+				}
+				slog.Info("linked oidc provider to existing user by verified email",
+					"provider", provider.Name,
+					"username", existingUser.ID,
+					"email", existingUser.Email,
+				)
+				user = existingUser
+				routeutils.SetOidcIdTokenPayload(idTokenPayload, r, w)
+				h.finishUserLogin(user, r, w)
+				http.Redirect(w, r, fmt.Sprintf("%s/summary", h.config.Server.BasePath), http.StatusFound)
+				return
+			}
+		}
+
 		// create new user account
 		if !h.config.IsDev() && !h.config.Security.OidcAllowSignup {
 			routeutils.SetError(r, w, i18n.Translate(lang, "flash.signup_disabled"))

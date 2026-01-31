@@ -691,6 +691,7 @@
   "flash.oidc_exchange_failed": "Failed to exchange authorization code for access token",
   "flash.oidc_id_token_failed": "Failed to extract id_token",
   "flash.oidc_verify_failed": "Failed to verify and decode id_token",
+  "flash.oidc_link_failed": "Failed to link account",
 
   "invite.title": "Team Invites",
   "invite.generate": "Generate Invite",

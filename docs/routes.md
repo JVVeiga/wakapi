@@ -141,7 +141,7 @@ POST /api/compat/wakatime/v1/users/{user}/heartbeats.bulk
 | Cookie | `wakapi_auth` (securecookie) | Web UI (browser) |
 | API Key Header | `Authorization: Basic <base64(key)>` | CLI/API |
 | API Key Query | `?api_key=<key>` | Badges, integrações |
-| OIDC | OAuth2 flow | SSO (GitHub, Google, etc.) |
+| OIDC | OAuth2 flow | SSO (GitHub, Google, etc.). Se `email_verified == true` e já existe usuário com o mesmo email, vincula automaticamente a conta OIDC ao usuário existente |
 | Trusted Header | Header customizável (default: Remote-User) | Reverse proxy auth |
 
 ### Tipos de API Key

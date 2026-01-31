@@ -165,6 +165,13 @@ func (srv *UserService) GetUserByOidc(provider, sub string) (*models.User, error
 	})
 }
 
+func (srv *UserService) LinkOidc(user *models.User, provider, sub string) error {
+	user.AuthType = provider
+	user.Sub = sub
+	_, err := srv.repository.Update(user)
+	return err
+}
+
 func (srv *UserService) GetAll() ([]*models.User, error) {
 	return srv.repository.GetAll()
 }

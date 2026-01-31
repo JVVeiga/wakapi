@@ -691,6 +691,7 @@
   "flash.oidc_exchange_failed": "Falha ao trocar código de autorização por token de acesso",
   "flash.oidc_id_token_failed": "Falha ao extrair id_token",
   "flash.oidc_verify_failed": "Falha ao verificar e decodificar id_token",
+  "flash.oidc_link_failed": "Falha ao vincular conta",
 
   "invite.title": "Convites do Time",
   "invite.generate": "Gerar Convite",
