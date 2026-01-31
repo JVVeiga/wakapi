@@ -177,6 +177,7 @@ func (r *UserRepository) Update(user *models.User) (*models.User, error) {
 		"heartbeats_timeout_sec":   user.HeartbeatsTimeoutSec,
 		"readme_stats_base_url":    user.ReadmeStatsBaseUrl,
 		"is_admin":                 user.IsAdmin,
+		"language":                 user.Language,
 	}
 
 	result := r.db.Model(user).Updates(updateMap)
