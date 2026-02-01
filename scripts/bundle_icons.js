@@ -82,6 +82,7 @@ let icons = [
     'jam:crown-f',
     'octicon:project-16',
     'octicon:share-16',
+    'mdi:account-group',
     'mdi:close',
     'mdi:filter',
     'mdi:invite',
