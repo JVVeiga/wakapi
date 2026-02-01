@@ -29,7 +29,6 @@
 
     <div class="menu-item relative" @click="state.showDropdownResources = !state.showDropdownResources" data-trigger-for="showDropdownResources">
         <span class="iconify inline text-2xl text-secondary" data-icon="ph:books-bold"></span>
-        <a class="text-secondary hidden xl:inline-block">{{ .T "nav.resources" }}</a>
         <span class="iconify inline text-xl text-secondary" data-icon="akar-icons:chevron-down"></span>
 
         <div v-cloak v-show="state.showDropdownResources" class="flex bg-card shadow-md z-10 p-2 absolute top-0 right-0 rounded popup mt-12 w-max" id="resources-menu-dropdown" style="min-width: 160px">
@@ -70,13 +69,11 @@
 
     <a class="menu-item" href="settings">
         <span class="iconify inline text-2xl text-secondary" data-icon="ci:settings-filled"></span>
-        <span class="text-secondary hidden xl:inline-block">{{ .T "nav.settings" }}</span>
     </a>
 
     {{ if .SharedLoggedInViewModel.User.IsAdmin }}
     <a class="menu-item" href="admin">
         <span class="iconify inline text-2xl text-secondary" data-icon="ri:admin-fill"></span>
-        <span class="text-secondary hidden xl:inline-block">{{ .T "nav.admin" }}</span>
     </a>
     {{ end }}
 
