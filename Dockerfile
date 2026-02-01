@@ -1,5 +1,5 @@
 # Stage 1: Build frontend assets (Tailwind CSS + Iconify icons)
-FROM node:20-alpine AS frontend
+FROM --platform=$BUILDPLATFORM node:20-alpine AS frontend
 WORKDIR /src
 COPY package.json ./
 COPY scripts/ ./scripts/
