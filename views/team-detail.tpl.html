@@ -16,7 +16,7 @@
                 <h1 class="h1">{{ .Team.Name }}</h1>
             </div>
             <div class="flex items-center gap-3">
-                {{ if or .IsOwner .SharedLoggedInViewModel.User.IsAdmin }}
+                {{ if or .IsCoOwner .SharedLoggedInViewModel.User.IsAdmin }}
                 <a href="teams/{{ .Team.ID }}/invites" class="btn-primary text-sm">{{ .T "invite.title" }}</a>
                 {{ end }}
                 <span class="text-sm text-muted">{{ .IntervalLabel }}</span>
@@ -116,18 +116,37 @@
             {{ range .MemberSummaries }}
             <li class="px-4 py-3 rounded-md border-2 border-muted flex items-center justify-between">
                 <div class="flex items-center truncate">
-                    {{ if or $.IsOwner $.SharedLoggedInViewModel.User.IsAdmin }}
+                    {{ if or $.IsCoOwner $.SharedLoggedInViewModel.User.IsAdmin }}
                     <a href="teams/{{ $.Team.ID }}/members/{{ .UserID }}" class="text-foreground font-semibold font-mono truncate hover:text-primary hover:underline">{{ .UserID }}</a>
                     {{ else }}
                     <span class="text-foreground font-semibold font-mono truncate">{{ .UserID }}</span>
                     {{ end }}
                     {{ if eq .Role "owner" }}
-                    <span class="ml-2 text-xs bg-primary text-white px-1.5 py-0.5 rounded">{{ $.T "team_detail.role_owner" }}</span>
+                    <span class="ml-2 text-xs bg-amber-500 text-white px-1.5 py-0.5 rounded">{{ $.T "team_detail.role_owner" }}</span>
+                    {{ else if eq .Role "co-owner" }}
+                    <span class="ml-2 text-xs bg-accent text-white px-1.5 py-0.5 rounded">{{ $.T "team_detail.role_coowner" }}</span>
                     {{ end }}
                 </div>
                 <div class="flex items-center gap-3">
                     <span class="text-muted text-sm">{{ duration .TotalTime }}</span>
-                    {{ if and (or $.IsOwner $.SharedLoggedInViewModel.User.IsAdmin) (ne .Role "owner") }}
+                    {{ if and $.IsOwner (eq .Role "member") }}
+                    <form method="POST" action="teams/{{ $.Team.ID }}/members/role" class="inline">
+                        <input type="hidden" name="user_id" value="{{ .UserID }}">
+                        <input type="hidden" name="role" value="co-owner">
+                        <button type="submit" class="text-accent hover:text-accent/80 text-sm" title="{{ $.T "team_detail.promote_to_coowner" }}">
+                            <span class="iconify inline" data-icon="mdi:arrow-up" style="width: 16px; height: 16px"></span>
+                        </button>
+                    </form>
+                    {{ else if and $.IsOwner (eq .Role "co-owner") }}
+                    <form method="POST" action="teams/{{ $.Team.ID }}/members/role" class="inline">
+                        <input type="hidden" name="user_id" value="{{ .UserID }}">
+                        <input type="hidden" name="role" value="member">
+                        <button type="submit" class="text-muted hover:text-secondary text-sm" title="{{ $.T "team_detail.demote_from_coowner" }}">
+                            <span class="iconify inline" data-icon="mdi:arrow-down" style="width: 16px; height: 16px"></span>
+                        </button>
+                    </form>
+                    {{ end }}
+                    {{ if and (or $.CanRemove $.SharedLoggedInViewModel.User.IsAdmin) (ne .Role "owner") (ne .Role "co-owner") }}
                     <form method="POST" action="teams/{{ $.Team.ID }}/members/remove" onsubmit="return confirm('{{ $.T "team_detail.confirm_remove_member" }}')">
                         <input type="hidden" name="user_id" value="{{ .UserID }}">
                         <button type="submit" class="text-red-400 hover:text-red-600 text-sm" title="{{ $.T "team_detail.remove_member" }}">
