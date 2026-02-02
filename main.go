@@ -240,7 +240,6 @@ func main() {
 	activityHandler := api.NewActivityApiHandler(userService, activityService, teamService)
 	badgeHandler := api.NewBadgeHandler(userService, summaryService)
 	captchaHandler := api.NewCaptchaHandler()
-	monitoredSitesApiHandler := api.NewMonitoredSitesHandler(userService, monitoredSiteService)
 
 	// Compat Handlers
 	wakatimeV1StatusBarHandler := wtV1Routes.NewStatusBarHandler(userService, summaryService)
@@ -252,6 +251,7 @@ func main() {
 	wakatimeV1HeartbeatsHandler := wtV1Routes.NewHeartbeatHandler(userService, heartbeatService)
 	wakatimeV1LeadersHandler := wtV1Routes.NewLeadersHandler(userService, leaderboardService)
 	wakatimeV1UserAgentsHandler := wtV1Routes.NewUserAgentsHandler(userService, heartbeatService)
+	wakatimeV1MonitoredSitesHandler := wtV1Routes.NewMonitoredSitesHandler(userService, monitoredSiteService)
 	shieldV1BadgeHandler := shieldsV1Routes.NewBadgeHandler(summaryService, userService)
 
 	// MVC Handlers
@@ -337,9 +337,9 @@ func main() {
 	wakatimeV1HeartbeatsHandler.RegisterRoutes(apiRouter)
 	wakatimeV1LeadersHandler.RegisterRoutes(apiRouter)
 	wakatimeV1UserAgentsHandler.RegisterRoutes(apiRouter)
+	wakatimeV1MonitoredSitesHandler.RegisterRoutes(apiRouter)
 	shieldV1BadgeHandler.RegisterRoutes(apiRouter)
 	captchaHandler.RegisterRoutes(apiRouter)
-	monitoredSitesApiHandler.RegisterRoutes(apiRouter)
 
 	// Static Routes
 	// https://github.com/golang/go/issues/43431

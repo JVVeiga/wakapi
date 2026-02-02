@@ -1,4 +1,4 @@
-package api
+package v1
 
 import (
 	"net/http"
@@ -28,10 +28,10 @@ func NewMonitoredSitesHandler(
 }
 
 func (h *MonitoredSitesHandler) RegisterRoutes(router chi.Router) {
-	r := chi.NewRouter()
-	r.Use(middlewares.NewAuthenticateMiddleware(h.userSrvc).Handler)
-	r.Get("/", h.Get)
-	router.Mount("/monitored-sites", r)
+	router.Group(func(r chi.Router) {
+		r.Use(middlewares.NewAuthenticateMiddleware(h.userSrvc).Handler)
+		r.Get("/compat/wakatime/v1/monitored-sites", h.Get)
+	})
 }
 
 type MonitoredSitesResponse struct {
@@ -44,7 +44,14 @@ type MonitoredSiteResponse struct {
 	Label string `json:"label"`
 }
 
-// Get handles GET /api/monitored-sites
+// @Summary Retrieve monitored sites
+// @Description Returns a list of all monitored sites with their URLs and labels
+// @ID get-monitored-sites
+// @Tags wakatime
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} MonitoredSitesResponse
+// @Router /compat/wakatime/v1/monitored-sites [get]
 func (h *MonitoredSitesHandler) Get(w http.ResponseWriter, r *http.Request) {
 	sites, err := h.monitoredSiteSrvc.GetAll()
 	if err != nil {
