@@ -342,7 +342,7 @@ const invitePageSize = 5
 func (srv *TeamService) GenerateInvite(teamID, creatorID string) (*models.TeamInvite, error) {
 	code := uuid.Must(uuid.NewV4()).String()
 	now := models.CustomTime(time.Now())
-	expiresAt := models.CustomTime(time.Now().Add(2 * time.Hour))
+	expiresAt := models.CustomTime(time.Now().Add(24 * time.Hour))
 
 	invite := &models.TeamInvite{
 		Code:      code,
