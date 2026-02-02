@@ -214,3 +214,12 @@ type ITeamService interface {
 	UpdateMemberRole(string, string, string) error
 	GetUserPermissions(string, string) (*TeamPermissions, error)
 }
+
+type IMonitoredSiteService interface {
+	GetAll() ([]*models.MonitoredSite, error)
+	GetByID(uint) (*models.MonitoredSite, error)
+	Create(*models.MonitoredSite) (*models.MonitoredSite, error)
+	Update(*models.MonitoredSite) (*models.MonitoredSite, error)
+	Delete(uint) error
+	Count() (int, error)
+}

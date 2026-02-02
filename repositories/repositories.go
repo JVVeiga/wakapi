@@ -182,3 +182,12 @@ type ITeamRepository interface {
 	GetInvitesByTeam(string, int, int) ([]*models.TeamInvite, int64, error)
 	MarkInviteUsed(string, string) error
 }
+
+type IMonitoredSiteRepository interface {
+	IBaseRepository
+	GetAll() ([]*models.MonitoredSite, error)
+	GetByID(uint) (*models.MonitoredSite, error)
+	Insert(*models.MonitoredSite) (*models.MonitoredSite, error)
+	Update(*models.MonitoredSite) (*models.MonitoredSite, error)
+	Delete(uint) error
+}

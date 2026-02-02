@@ -18,12 +18,13 @@ import (
 )
 
 type AdminHandler struct {
-	config           *conf.Config
-	userSrvc         services.IUserService
-	heartbeatSrvc    services.IHeartbeatService
-	summarySrvc      services.ISummaryService
-	apiKeySrvc       services.IApiKeyService
-	teamSrvc         services.ITeamService
+	config              *conf.Config
+	userSrvc            services.IUserService
+	heartbeatSrvc       services.IHeartbeatService
+	summarySrvc         services.ISummaryService
+	apiKeySrvc          services.IApiKeyService
+	teamSrvc            services.ITeamService
+	monitoredSiteSrvc   services.IMonitoredSiteService
 }
 
 func NewAdminHandler(
@@ -32,14 +33,16 @@ func NewAdminHandler(
 	summaryService services.ISummaryService,
 	apiKeyService services.IApiKeyService,
 	teamService services.ITeamService,
+	monitoredSiteService services.IMonitoredSiteService,
 ) *AdminHandler {
 	return &AdminHandler{
-		config:        conf.Get(),
-		userSrvc:      userService,
-		heartbeatSrvc: heartbeatService,
-		summarySrvc:   summaryService,
-		apiKeySrvc:    apiKeyService,
-		teamSrvc:      teamService,
+		config:            conf.Get(),
+		userSrvc:          userService,
+		heartbeatSrvc:     heartbeatService,
+		summarySrvc:       summaryService,
+		apiKeySrvc:        apiKeyService,
+		teamSrvc:          teamService,
+		monitoredSiteSrvc: monitoredSiteService,
 	}
 }
 
@@ -61,6 +64,10 @@ func (h *AdminHandler) RegisterRoutes(router chi.Router) {
 	r.Get("/teams/{id}", h.GetTeamDetail)
 	r.Post("/teams/{id}", h.PostTeamAction)
 	r.Post("/teams/{id}/members", h.PostTeamMemberAction)
+	r.Get("/sites", h.GetMonitoredSites)
+	r.Post("/sites", h.PostMonitoredSites)
+	r.Get("/sites/{id}", h.GetMonitoredSiteDetail)
+	r.Post("/sites/{id}", h.PostMonitoredSiteDetail)
 
 	router.Mount("/admin", r)
 }
@@ -480,4 +487,207 @@ func (h *AdminHandler) PostTeamMemberAction(w http.ResponseWriter, r *http.Reque
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("%s/admin/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
+}
+
+// GetMonitoredSites handles GET /admin/sites
+func (h *AdminHandler) GetMonitoredSites(w http.ResponseWriter, r *http.Request) {
+	if h.config.IsDev() {
+		loadTemplates()
+	}
+
+	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
+
+	sites, err := h.monitoredSiteSrvc.GetAll()
+	if err != nil {
+		conf.Log().Request(r).Error("failed to get monitored sites", "error", err)
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.error_loading_sites"))
+		http.Redirect(w, r, fmt.Sprintf("%s/admin", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	vm := &struct {
+		view.SharedLoggedInViewModel
+		Sites []*models.MonitoredSite
+	}{
+		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
+			User:            user,
+		},
+		Sites: sites,
+	}
+
+	if err := templates[conf.AdminMonitoredSitesTemplate].Execute(w, routeutils.WithSessionMessages(vm, r, w)); err != nil {
+		conf.Log().Request(r).Error("failed to render admin sites page", "error", err)
+	}
+}
+
+// PostMonitoredSites handles POST /admin/sites
+func (h *AdminHandler) PostMonitoredSites(w http.ResponseWriter, r *http.Request) {
+	if h.config.IsDev() {
+		loadTemplates()
+	}
+
+	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
+
+	if err := r.ParseForm(); err != nil {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.invalid_form"))
+		http.Redirect(w, r, fmt.Sprintf("%s/admin/sites", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	url := strings.TrimSpace(r.FormValue("url"))
+	label := strings.TrimSpace(r.FormValue("label"))
+
+	if url == "" || label == "" {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.url_label_required"))
+		http.Redirect(w, r, fmt.Sprintf("%s/admin/sites", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	site := &models.MonitoredSite{
+		URL:    url,
+		Label:  label,
+		UserID: user.ID,
+	}
+
+	if _, err := h.monitoredSiteSrvc.Create(site); err != nil {
+		conf.Log().Request(r).Error("failed to create monitored site", "error", err)
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.site_create_failed"))
+		http.Redirect(w, r, fmt.Sprintf("%s/admin/sites", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	conf.Log().Info("monitored site created",
+		"admin", user.ID,
+		"label", site.Label,
+		"url", site.URL,
+	)
+	routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.site_created"))
+	http.Redirect(w, r, fmt.Sprintf("%s/admin/sites", h.config.Server.BasePath), http.StatusFound)
+}
+
+// GetMonitoredSiteDetail handles GET /admin/sites/{id}
+func (h *AdminHandler) GetMonitoredSiteDetail(w http.ResponseWriter, r *http.Request) {
+	if h.config.IsDev() {
+		loadTemplates()
+	}
+
+	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
+
+	siteIDStr := chi.URLParam(r, "id")
+	siteID, err := strconv.ParseUint(siteIDStr, 10, 32)
+	if err != nil {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.invalid_site_id"))
+		http.Redirect(w, r, fmt.Sprintf("%s/admin/sites", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	site, err := h.monitoredSiteSrvc.GetByID(uint(siteID))
+	if err != nil {
+		conf.Log().Request(r).Error("failed to get monitored site", "error", err)
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.site_not_found"))
+		http.Redirect(w, r, fmt.Sprintf("%s/admin/sites", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	vm := &struct {
+		view.SharedLoggedInViewModel
+		Data *models.MonitoredSite
+	}{
+		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
+			SharedViewModel: view.NewSharedViewModel(h.config, nil, r, user),
+			User:            user,
+		},
+		Data: site,
+	}
+
+	if err := templates[conf.AdminMonitoredSiteDetailTemplate].Execute(w, routeutils.WithSessionMessages(vm, r, w)); err != nil {
+		conf.Log().Request(r).Error("failed to render admin site detail page", "error", err)
+	}
+}
+
+// PostMonitoredSiteDetail handles POST /admin/sites/{id}
+func (h *AdminHandler) PostMonitoredSiteDetail(w http.ResponseWriter, r *http.Request) {
+	if h.config.IsDev() {
+		loadTemplates()
+	}
+
+	user := middlewares.GetPrincipal(r)
+	lang := routeutils.ResolveLanguage(r, user)
+
+	if err := r.ParseForm(); err != nil {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.invalid_form"))
+		http.Redirect(w, r, fmt.Sprintf("%s/admin/sites", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	siteIDStr := chi.URLParam(r, "id")
+	siteID, err := strconv.ParseUint(siteIDStr, 10, 32)
+	if err != nil {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.invalid_site_id"))
+		http.Redirect(w, r, fmt.Sprintf("%s/admin/sites", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	action := strings.ToLower(r.FormValue("action"))
+
+	switch action {
+	case "delete":
+		if err := h.monitoredSiteSrvc.Delete(uint(siteID)); err != nil {
+			conf.Log().Request(r).Error("failed to delete monitored site", "error", err)
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.site_delete_failed"))
+			http.Redirect(w, r, fmt.Sprintf("%s/admin/sites/%d", h.config.Server.BasePath, siteID), http.StatusFound)
+			return
+		}
+		conf.Log().Info("monitored site deleted",
+			"admin", user.ID,
+			"site_id", siteID,
+		)
+		routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.site_deleted"))
+		http.Redirect(w, r, fmt.Sprintf("%s/admin/sites", h.config.Server.BasePath), http.StatusFound)
+
+	case "update":
+		site, err := h.monitoredSiteSrvc.GetByID(uint(siteID))
+		if err != nil {
+			conf.Log().Request(r).Error("failed to get monitored site", "error", err)
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.site_not_found"))
+			http.Redirect(w, r, fmt.Sprintf("%s/admin/sites", h.config.Server.BasePath), http.StatusFound)
+			return
+		}
+
+		url := strings.TrimSpace(r.FormValue("url"))
+		label := strings.TrimSpace(r.FormValue("label"))
+
+		if url == "" || label == "" {
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.url_label_required"))
+			http.Redirect(w, r, fmt.Sprintf("%s/admin/sites/%d", h.config.Server.BasePath, siteID), http.StatusFound)
+			return
+		}
+
+		site.URL = url
+		site.Label = label
+
+		if _, err := h.monitoredSiteSrvc.Update(site); err != nil {
+			conf.Log().Request(r).Error("failed to update monitored site", "error", err)
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.site_update_failed"))
+			http.Redirect(w, r, fmt.Sprintf("%s/admin/sites/%d", h.config.Server.BasePath, siteID), http.StatusFound)
+			return
+		}
+
+		conf.Log().Info("monitored site updated",
+			"admin", user.ID,
+			"site_id", siteID,
+			"label", site.Label,
+			"url", site.URL,
+		)
+		routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.site_updated"))
+		http.Redirect(w, r, fmt.Sprintf("%s/admin/sites/%d", h.config.Server.BasePath, siteID), http.StatusFound)
+
+	default:
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.unknown_action"))
+		http.Redirect(w, r, fmt.Sprintf("%s/admin/sites/%d", h.config.Server.BasePath, siteID), http.StatusFound)
+	}
 }

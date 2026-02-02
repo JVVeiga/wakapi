@@ -71,6 +71,7 @@ var (
 	durationRepository        *repositories.DurationRepository
 	apiKeyRepository          repositories.IApiKeyRepository
 	teamRepository            repositories.ITeamRepository
+	monitoredSiteRepository   repositories.IMonitoredSiteRepository
 )
 
 var (
@@ -92,6 +93,7 @@ var (
 	miscService            services.IMiscService
 	apiKeyService          services.IApiKeyService
 	teamService            services.ITeamService
+	monitoredSiteService   services.IMonitoredSiteService
 )
 
 // TODO: Refactor entire project to be structured after business domains
@@ -188,6 +190,7 @@ func main() {
 	durationRepository = repositories.NewDurationRepository(db)
 	apiKeyRepository = repositories.NewApiKeyRepository(db)
 	teamRepository = repositories.NewTeamRepository(db)
+	monitoredSiteRepository = repositories.NewMonitoredSiteRepository(db)
 
 	// Services
 	mailService = mail.NewMailService()
@@ -195,6 +198,7 @@ func main() {
 	keyValueService = services.NewKeyValueService(keyValueRepository)
 	apiKeyService = services.NewApiKeyService(apiKeyRepository)
 	teamService = services.NewTeamService(teamRepository)
+	monitoredSiteService = services.NewMonitoredSiteService(monitoredSiteRepository)
 	userService = services.NewUserService(keyValueService, mailService, apiKeyService, userRepository)
 	languageMappingService = services.NewLanguageMappingService(languageMappingRepository)
 	projectLabelService = services.NewProjectLabelService(projectLabelRepository)
@@ -236,6 +240,7 @@ func main() {
 	activityHandler := api.NewActivityApiHandler(userService, activityService, teamService)
 	badgeHandler := api.NewBadgeHandler(userService, summaryService)
 	captchaHandler := api.NewCaptchaHandler()
+	monitoredSitesApiHandler := api.NewMonitoredSitesHandler(userService, monitoredSiteService)
 
 	// Compat Handlers
 	wakatimeV1StatusBarHandler := wtV1Routes.NewStatusBarHandler(userService, summaryService)
@@ -259,7 +264,7 @@ func main() {
 	imprintHandler := routes.NewImprintHandler(keyValueService)
 	setupHandler := routes.NewSetupHandler(userService)
 	leaderboardHandler := condition.Ternary[bool, routes.Handler](config.App.LeaderboardEnabled, routes.NewLeaderboardHandler(userService, leaderboardService, teamService), routes.NewNoopHandler())
-	adminHandler := routes.NewAdminHandler(userService, heartbeatService, summaryService, apiKeyService, teamService)
+	adminHandler := routes.NewAdminHandler(userService, heartbeatService, summaryService, apiKeyService, teamService, monitoredSiteService)
 	teamsHandler := routes.NewTeamsHandler(userService, teamService, summaryService, heartbeatService, durationService, aliasService)
 	miscHandler := routes.NewMiscHandler(userService)
 	langHandler := routes.NewLanguageHandler(userService)
@@ -334,6 +339,7 @@ func main() {
 	wakatimeV1UserAgentsHandler.RegisterRoutes(apiRouter)
 	shieldV1BadgeHandler.RegisterRoutes(apiRouter)
 	captchaHandler.RegisterRoutes(apiRouter)
+	monitoredSitesApiHandler.RegisterRoutes(apiRouter)
 
 	// Static Routes
 	// https://github.com/golang/go/issues/43431

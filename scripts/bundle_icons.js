@@ -86,6 +86,7 @@ let icons = [
     'mdi:close',
     'mdi:filter',
     'mdi:invite',
+    'mdi:web',
     'octicon:info-16',
     'devicon-plain:codeberg',
     'devicon-plain:google',

@@ -31,11 +31,18 @@
             </div>
         </div>
 
-        <div class="mb-8">
+        <div class="mb-8 space-y-3">
             <a href="admin/teams" class="px-4 py-3 rounded-md border-2 border-accent flex items-center justify-between hover:bg-focused transition-colors">
                 <div class="flex items-center space-x-3">
                     <span class="iconify inline text-xl text-accent" data-icon="bi:people-fill"></span>
                     <span class="text-foreground font-semibold">{{ .T "admin.manage_teams" }}</span>
+                </div>
+                <span class="text-secondary">&rarr;</span>
+            </a>
+            <a href="admin/sites" class="px-4 py-3 rounded-md border-2 border-accent flex items-center justify-between hover:bg-focused transition-colors">
+                <div class="flex items-center space-x-3">
+                    <span class="iconify inline text-xl text-accent" data-icon="mdi:web"></span>
+                    <span class="text-foreground font-semibold">{{ .T "monitoredsites.menu" }}</span>
                 </div>
                 <span class="text-secondary">&rarr;</span>
             </a>
