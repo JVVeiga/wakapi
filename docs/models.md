@@ -168,6 +168,115 @@ Link de convite para entrar em um time. Uso único, com expiração de 2 horas.
 
 Status derivado em runtime: `IsUsed()`, `IsExpired()`, `Status()` → "active" / "expired" / "used"
 
+### Team (`models/team.go`)
+
+Grupo de usuários que compartilham dashboards e métricas agregadas.
+
+**Campos principais:**
+- `ID` (string, PK) — UUID do time
+- `Name` (string) — nome do time
+- `Description` (string) — descrição opcional
+- `OwnerID` (string, FK → User) — dono original do time
+- `Owner` (*User) — relacionamento com o dono
+- `CreatedAt` (CustomTime) — data de criação
+
+### TeamMember (`models/team.go`)
+
+Associação entre usuário e time, com papel hierárquico.
+
+**Campos principais:**
+- `ID` (uint, PK auto)
+- `TeamID` (string, FK → Team) — time associado
+- `Team` (*Team) — relacionamento
+- `UserID` (string, FK → User) — usuário membro
+- `User` (*User) — relacionamento
+- `Role` (string) — papel no time (ver hierarquia abaixo)
+- `JoinedAt` (CustomTime) — data de entrada
+
+Unique index: `idx_team_member_composite` (TeamID, UserID)
+
+#### Hierarquia de Papéis
+
+O sistema suporta três níveis de permissão em times:
+
+**1. Owner (Dono)**
+- Criador original do time ou receptor de transferência de ownership
+- Permissões completas:
+  - ✅ Criar convites para o time
+  - ✅ Ver lista de convites ativos
+  - ✅ Ver dashboards e métricas detalhadas dos membros
+  - ✅ Ver activity charts do time
+  - ✅ **Remover membros do time** (incluindo co-owners)
+  - ✅ **Promover membros para co-owner**
+  - ✅ **Rebaixar co-owners para member**
+  - ✅ **Transferir ownership** para outro membro
+
+**2. Co-Owner (Co-proprietário)**
+- Papel intermediário com privilégios administrativos limitados
+- Permissões:
+  - ✅ Criar convites para o time
+  - ✅ Ver lista de convites ativos
+  - ✅ Ver dashboards e métricas detalhadas dos membros
+  - ✅ Ver activity charts do time
+  - ❌ **Não pode** remover membros do time
+  - ❌ **Não pode** promover/rebaixar outros membros
+  - ❌ **Não pode** transferir ownership
+
+**3. Member (Membro)**
+- Papel básico sem privilégios administrativos
+- Permissões:
+  - ✅ Ver métricas agregadas do time
+  - ✅ Ver activity charts do time
+  - ❌ Não pode ver dashboards individuais de outros membros
+  - ❌ Não pode criar convites
+  - ❌ Não pode remover membros
+  - ❌ Não pode gerenciar papéis
+
+#### Gerenciamento de Papéis
+
+**Promoção/Demoção:**
+- Apenas owners podem alterar papéis de membros
+- Owners podem promover members para co-owner
+- Owners podem rebaixar co-owners para member
+- Co-owners não podem alterar papéis (nem o próprio)
+- O papel de owner só pode ser transferido via `TransferOwnership()`
+
+**Remoção de Membros:**
+- Apenas owners podem remover membros
+- Co-owners não podem ser removidos (proteção em `services/team.go`)
+- Owner não pode ser removido (proteção em `services/team.go`)
+- Membros regulares podem ser removidos por owners
+
+**Constantes:**
+```go
+const (
+    TeamRoleOwner   = "owner"     // Dono do time
+    TeamRoleCoOwner = "co-owner"  // Co-proprietário
+    TeamRoleMember  = "member"    // Membro regular
+)
+```
+
+**Métodos de Validação:**
+- `Team.IsValid()` — verifica se ID, Name e OwnerID estão presentes
+- `TeamMember.IsValid()` — verifica se TeamID, UserID estão presentes e Role é válida
+
+**Métodos de Permissão (TeamService):**
+
+**✅ Recomendado (otimizado):**
+- `GetUserPermissions(teamID, userID)` — retorna todas as permissões em uma única query
+  - Retorna struct `TeamPermissions` com: `IsOwner`, `IsCoOwner`, `IsMember`, `CanRemove`, `CanPromote`, `CanManageInvites`, `CanViewDashboards`
+  - Usa cache eficiente com chave única `team_perms_{teamID}_{userID}`
+  - **60% mais rápido** que chamar métodos individuais
+
+**⚠️ Métodos Individuais (disponíveis para compatibilidade):**
+- `IsTeamOwner(teamID, userID)` — verifica se usuário é owner
+- `IsTeamOwnerOrCoOwner(teamID, userID)` — verifica se é owner ou co-owner
+- ~~`CanManageInvites(teamID, userID)`~~ — *deprecated, use GetUserPermissions*
+- ~~`CanViewMemberDashboards(teamID, userID)`~~ — *deprecated, use GetUserPermissions*
+- ~~`CanRemoveMembers(teamID, userID)`~~ — *deprecated, use GetUserPermissions*
+- ~~`CanPromoteMembers(teamID, userID)`~~ — *deprecated, use GetUserPermissions*
+- `UpdateMemberRole(teamID, userID, newRole)` — altera papel (apenas owner)
+
 ### KeyStringValue (`models/shared.go`)
 
 Store key-value genérico para estado da aplicação.

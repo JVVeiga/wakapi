@@ -39,10 +39,11 @@ Montadas em `rootRouter` com `SecurityMiddleware` (headers CSP, X-Frame-Options)
 | GET | `/lang` | LanguageHandler.GetSwitch | Não | Trocar idioma (seta cookie + atualiza User.Language se logado) |
 | GET | `/teams` | TeamsHandler.GetIndex | Sim (redirect) | Lista de times do usuário |
 | GET | `/teams/{id}` | TeamsHandler.GetTeamDetail | Sim (membro) | Detalhe do time com métricas agregadas |
-| GET | `/teams/{id}/members/{userID}` | TeamsHandler.GetMemberSummary | Sim (owner/admin) | Dashboard individual de um membro do time |
-| POST | `/teams/{id}/members/remove` | TeamsHandler.PostRemoveMember | Sim (owner/admin) | Remover membro do time |
-| GET | `/teams/{id}/invites` | TeamsHandler.GetTeamInvites | Sim (owner/admin) | Histórico de convites do time |
-| POST | `/teams/{id}/invites` | TeamsHandler.PostGenerateInvite | Sim (owner/admin) | Gerar link de convite |
+| GET | `/teams/{id}/members/{userID}` | TeamsHandler.GetMemberSummary | Sim (owner/co-owner/admin) | Dashboard individual de um membro do time |
+| POST | `/teams/{id}/members/remove` | TeamsHandler.PostRemoveMember | Sim (owner/admin) | Remover membro do time (apenas owner, co-owners não podem) |
+| POST | `/teams/{id}/members/{userID}/role` | TeamsHandler.PostUpdateMemberRole | Sim (owner/admin) | Alterar papel de um membro (promover para co-owner ou rebaixar para member) |
+| GET | `/teams/{id}/invites` | TeamsHandler.GetTeamInvites | Sim (owner/co-owner/admin) | Histórico de convites do time |
+| POST | `/teams/{id}/invites` | TeamsHandler.PostGenerateInvite | Sim (owner/co-owner/admin) | Gerar link de convite |
 | GET | `/teams/invite/{code}` | TeamsHandler.GetAcceptInvite | Sim (redirect) | Tela de aceitação de convite |
 | POST | `/teams/invite/{code}` | TeamsHandler.PostAcceptInvite | Sim (redirect) | Aceitar convite e entrar no time |
 | GET | `/admin` | AdminHandler.GetDashboard | Sim (admin) | Dashboard administrativo |
