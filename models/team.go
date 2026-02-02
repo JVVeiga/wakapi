@@ -3,8 +3,9 @@ package models
 import "github.com/gofrs/uuid/v5"
 
 const (
-	TeamRoleOwner  = "owner"
-	TeamRoleMember = "member"
+	TeamRoleOwner   = "owner"
+	TeamRoleCoOwner = "co-owner"
+	TeamRoleMember  = "member"
 )
 
 type Team struct {
@@ -32,7 +33,7 @@ func (t *Team) IsValid() bool {
 
 func (tm *TeamMember) IsValid() bool {
 	return tm.TeamID != "" && tm.UserID != "" &&
-		(tm.Role == TeamRoleOwner || tm.Role == TeamRoleMember)
+		(tm.Role == TeamRoleOwner || tm.Role == TeamRoleCoOwner || tm.Role == TeamRoleMember)
 }
 
 func NewTeam(name, description, ownerID string) *Team {

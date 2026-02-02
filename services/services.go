@@ -206,4 +206,11 @@ type ITeamService interface {
 	AcceptInvite(string, string) (*models.Team, error)
 	GetInvites(string, int) ([]*models.TeamInvite, int64, error)
 	GetInviteByCode(string) (*models.TeamInvite, error)
+	IsTeamOwnerOrCoOwner(string, string) (bool, error)
+	CanManageInvites(string, string) (bool, error)
+	CanViewMemberDashboards(string, string) (bool, error)
+	CanRemoveMembers(string, string) (bool, error)
+	CanPromoteMembers(string, string) (bool, error)
+	UpdateMemberRole(string, string, string) error
+	GetUserPermissions(string, string) (*TeamPermissions, error)
 }

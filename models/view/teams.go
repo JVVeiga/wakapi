@@ -28,6 +28,8 @@ type TeamDetailViewModel struct {
 	To              time.Time
 	IntervalLabel   string
 	IsOwner         bool
+	IsCoOwner       bool
+	CanRemove       bool
 }
 
 type TeamInvitesViewModel struct {
@@ -39,6 +41,7 @@ type TeamInvitesViewModel struct {
 	Page       int
 	TotalPages int
 	IsOwner    bool
+	IsCoOwner  bool
 }
 
 type TeamInviteAcceptViewModel struct {

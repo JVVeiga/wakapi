@@ -15,6 +15,18 @@ import (
 	"github.com/muety/wakapi/repositories"
 )
 
+// TeamPermissions represents all permissions a user has for a specific team
+// Computed in a single database query for optimal performance
+type TeamPermissions struct {
+	IsOwner           bool // True if user is the team owner
+	IsCoOwner         bool // True if user is owner OR co-owner
+	IsMember          bool // True if user is any kind of member
+	CanRemove         bool // Can remove team members (owner only)
+	CanPromote        bool // Can promote/demote members (owner only)
+	CanManageInvites  bool // Can create and manage invites (owner or co-owner)
+	CanViewDashboards bool // Can view member dashboards (owner or co-owner)
+}
+
 type TeamService struct {
 	config     *config.Config
 	cache      *cache.Cache
@@ -144,6 +156,10 @@ func (srv *TeamService) RemoveMember(teamID, userID string) error {
 		return errors.New("cannot remove team owner")
 	}
 
+	if member.Role == models.TeamRoleCoOwner {
+		return errors.New("cannot remove co-owner")
+	}
+
 	if err := srv.repository.RemoveMember(teamID, userID); err != nil {
 		return err
 	}
@@ -199,10 +215,112 @@ func (srv *TeamService) IsTeamMember(teamID, userID string) (bool, error) {
 	return err == nil, nil
 }
 
+// IsTeamOwnerOrCoOwner checks if user has owner or co-owner privileges
+func (srv *TeamService) IsTeamOwnerOrCoOwner(teamID, userID string) (bool, error) {
+	member, err := srv.repository.GetMemberByTeamAndUser(teamID, userID)
+	if err != nil {
+		return false, nil
+	}
+	return member.Role == models.TeamRoleOwner || member.Role == models.TeamRoleCoOwner, nil
+}
+
+// CanManageInvites checks if user can create and view team invites
+// Deprecated: Use GetUserPermissions instead for better performance (single query vs multiple)
+func (srv *TeamService) CanManageInvites(teamID, userID string) (bool, error) {
+	return srv.IsTeamOwnerOrCoOwner(teamID, userID)
+}
+
+// CanViewMemberDashboards checks if user can view member dashboards
+// Deprecated: Use GetUserPermissions instead for better performance (single query vs multiple)
+func (srv *TeamService) CanViewMemberDashboards(teamID, userID string) (bool, error) {
+	return srv.IsTeamOwnerOrCoOwner(teamID, userID)
+}
+
+// CanRemoveMembers checks if user can remove team members
+// Deprecated: Use GetUserPermissions instead for better performance (single query vs multiple)
+func (srv *TeamService) CanRemoveMembers(teamID, userID string) (bool, error) {
+	// Only true owners can remove members, not co-owners
+	return srv.IsTeamOwner(teamID, userID)
+}
+
+// CanPromoteMembers checks if user can promote members to co-owner
+// Deprecated: Use GetUserPermissions instead for better performance (single query vs multiple)
+func (srv *TeamService) CanPromoteMembers(teamID, userID string) (bool, error) {
+	// Only true owners can promote/demote
+	return srv.IsTeamOwner(teamID, userID)
+}
+
+// UpdateMemberRole changes a team member's role
+// Only owners can promote members to co-owner or demote co-owners
+func (srv *TeamService) UpdateMemberRole(teamID, userID, newRole string) error {
+	// Validate new role
+	if newRole != models.TeamRoleMember && newRole != models.TeamRoleCoOwner {
+		return errors.New("invalid role: can only set member or co-owner")
+	}
+
+	member, err := srv.repository.GetMemberByTeamAndUser(teamID, userID)
+	if err != nil {
+		return errors.New("member not found")
+	}
+
+	// Cannot change owner role via this method
+	if member.Role == models.TeamRoleOwner {
+		return errors.New("cannot change owner role; use TransferOwnership instead")
+	}
+
+	// Update role
+	if err := srv.repository.UpdateMemberRole(teamID, userID, newRole); err != nil {
+		return err
+	}
+
+	srv.invalidateTeam(teamID)
+	return nil
+}
+
+// GetUserPermissions returns all permissions for a user in a single query
+// This is more efficient than calling individual permission methods
+func (srv *TeamService) GetUserPermissions(teamID, userID string) (*TeamPermissions, error) {
+	// Check cache first
+	cacheKey := fmt.Sprintf("team_perms_%s_%s", teamID, userID)
+	if cached, found := srv.cache.Get(cacheKey); found {
+		return cached.(*TeamPermissions), nil
+	}
+
+	// Single database query to get member info
+	member, err := srv.repository.GetMemberByTeamAndUser(teamID, userID)
+	if err != nil {
+		// Not a member - return empty permissions
+		empty := &TeamPermissions{}
+		srv.cache.Set(cacheKey, empty, cache.DefaultExpiration)
+		return empty, nil
+	}
+
+	// Derive all permissions from the member's role
+	isOwner := member.Role == models.TeamRoleOwner
+	isCoOwner := member.Role == models.TeamRoleCoOwner
+	isOwnerOrCoOwner := isOwner || isCoOwner
+
+	perms := &TeamPermissions{
+		IsOwner:           isOwner,
+		IsCoOwner:         isOwnerOrCoOwner,
+		IsMember:          true,
+		CanRemove:         isOwner,
+		CanPromote:        isOwner,
+		CanManageInvites:  isOwnerOrCoOwner,
+		CanViewDashboards: isOwnerOrCoOwner,
+	}
+
+	// Cache the result
+	srv.cache.Set(cacheKey, perms, cache.DefaultExpiration)
+	return perms, nil
+}
+
 // invalidateTeam removes cached data for a specific team
 func (srv *TeamService) invalidateTeam(teamID string) {
 	srv.cache.Delete(fmt.Sprintf("team_%s", teamID))
 	srv.cache.Delete(fmt.Sprintf("team_members_%s", teamID))
+	// Also invalidate all permission caches for this team
+	srv.invalidateByPrefix(fmt.Sprintf("team_perms_%s_", teamID))
 }
 
 // invalidateUserTeams removes cached team list for a specific user
@@ -210,7 +328,7 @@ func (srv *TeamService) invalidateUserTeams(userID string) {
 	srv.cache.Delete(fmt.Sprintf("user_teams_%s", userID))
 }
 
-// invalidateByPrefix removes all cache entries with the given prefix (unused but available for future use)
+// invalidateByPrefix removes all cache entries with the given prefix
 func (srv *TeamService) invalidateByPrefix(prefix string) {
 	for k := range srv.cache.Items() {
 		if strings.HasPrefix(k, prefix) {

@@ -449,6 +449,32 @@ func (h *AdminHandler) PostTeamMemberAction(w http.ResponseWriter, r *http.Reque
 			routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.ownership_transferred"))
 		}
 
+	case "promote_to_coowner":
+		if err := h.teamSrvc.UpdateMemberRole(teamID, userID, models.TeamRoleCoOwner); err != nil {
+			conf.Log().Request(r).Error("failed to promote to co-owner", "error", err)
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.promotion_failed"))
+		} else {
+			conf.Log().Info("member promoted to co-owner",
+				"admin", adminUser.ID,
+				"team_id", teamID,
+				"user_id", userID,
+			)
+			routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.promoted_to_coowner"))
+		}
+
+	case "demote_from_coowner":
+		if err := h.teamSrvc.UpdateMemberRole(teamID, userID, models.TeamRoleMember); err != nil {
+			conf.Log().Request(r).Error("failed to demote from co-owner", "error", err)
+			routeutils.SetError(r, w, i18n.Translate(lang, "flash.demotion_failed"))
+		} else {
+			conf.Log().Info("co-owner demoted to member",
+				"admin", adminUser.ID,
+				"team_id", teamID,
+				"user_id", userID,
+			)
+			routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.demoted_from_coowner"))
+		}
+
 	default:
 		routeutils.SetError(r, w, i18n.Translate(lang, "flash.unknown_action"))
 	}

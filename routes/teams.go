@@ -70,6 +70,7 @@ func (h *TeamsHandler) RegisterRoutes(router chi.Router) {
 	r.Post("/{id}/invites", h.PostGenerateInvite)
 	r.Get("/{id}/members/{userID}", h.GetMemberSummary)
 	r.Post("/{id}/members/remove", h.PostRemoveMember)
+	r.Post("/{id}/members/role", h.PostUpdateMemberRole)
 
 	router.Mount("/teams", r)
 }
@@ -204,7 +205,8 @@ func (h *TeamsHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 		aggregated.OperatingSystems = aggregated.OperatingSystems[:5]
 	}
 
-	isOwner, _ := h.teamSrvc.IsTeamOwner(teamID, user.ID)
+	// Get all permissions in a single query (optimized)
+	perms, _ := h.teamSrvc.GetUserPermissions(teamID, user.ID)
 
 	vm := &view.TeamDetailViewModel{
 		SharedLoggedInViewModel: view.SharedLoggedInViewModel{
@@ -218,7 +220,9 @@ func (h *TeamsHandler) GetTeamDetail(w http.ResponseWriter, r *http.Request) {
 		From:            from,
 		To:              to,
 		IntervalLabel:   i18n.Translate(lang, "interval.last_7_days"),
-		IsOwner:         isOwner,
+		IsOwner:         perms.IsOwner,
+		IsCoOwner:       perms.IsCoOwner,
+		CanRemove:       perms.CanRemove,
 	}
 
 	if err := templates[conf.TeamDetailTemplate].Execute(w, routeutils.WithSessionMessages(vm, r, w)); err != nil {
@@ -250,9 +254,9 @@ func (h *TeamsHandler) GetMemberSummary(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Authorization: must be admin or team owner
-	isOwner, _ := h.teamSrvc.IsTeamOwner(teamID, user.ID)
-	if !user.IsAdmin && !isOwner {
+	// Authorization: must be admin or have permission to view member dashboards
+	perms, _ := h.teamSrvc.GetUserPermissions(teamID, user.ID)
+	if !user.IsAdmin && !perms.CanViewDashboards {
 		routeutils.SetError(r, w, i18n.Translate(lang, "flash.unauthorized_member_dashboard"))
 		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
 		return
@@ -415,9 +419,9 @@ func (h *TeamsHandler) PostRemoveMember(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	isOwner, _ := h.teamSrvc.IsTeamOwner(teamID, user.ID)
-	if !user.IsAdmin && !isOwner {
-		routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_team_owner"))
+	perms, _ := h.teamSrvc.GetUserPermissions(teamID, user.ID)
+	if !user.IsAdmin && !perms.CanRemove {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_authorized_remove"))
 		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
 		return
 	}
@@ -427,6 +431,36 @@ func (h *TeamsHandler) PostRemoveMember(w http.ResponseWriter, r *http.Request) 
 		routeutils.SetError(r, w, i18n.Translate(lang, "flash.member_remove_failed"))
 	} else {
 		routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.member_removed"))
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
+}
+
+func (h *TeamsHandler) PostUpdateMemberRole(w http.ResponseWriter, r *http.Request) {
+	user := middlewares.GetPrincipal(r)
+	teamID := strings.TrimSpace(chi.URLParam(r, "id"))
+	userID := strings.TrimSpace(r.FormValue("user_id"))
+	newRole := strings.TrimSpace(r.FormValue("role"))
+	lang := routeutils.ResolveLanguage(r, user)
+
+	if teamID == "" || userID == "" || newRole == "" {
+		http.Redirect(w, r, fmt.Sprintf("%s/teams", h.config.Server.BasePath), http.StatusFound)
+		return
+	}
+
+	// Authorization: must be admin or owner
+	perms, _ := h.teamSrvc.GetUserPermissions(teamID, user.ID)
+	if !user.IsAdmin && !perms.CanPromote {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_authorized_promote"))
+		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
+		return
+	}
+
+	if err := h.teamSrvc.UpdateMemberRole(teamID, userID, newRole); err != nil {
+		conf.Log().Request(r).Error("failed to update member role", "error", err)
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.role_update_failed"))
+	} else {
+		routeutils.SetSuccess(r, w, i18n.Translate(lang, "flash.role_updated"))
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
@@ -448,9 +482,9 @@ func (h *TeamsHandler) GetTeamInvites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isOwner, _ := h.teamSrvc.IsTeamOwner(teamID, user.ID)
-	if !user.IsAdmin && !isOwner {
-		routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_team_owner"))
+	perms, _ := h.teamSrvc.GetUserPermissions(teamID, user.ID)
+	if !user.IsAdmin && !perms.CanManageInvites {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_authorized_invites"))
 		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
 		return
 	}
@@ -476,7 +510,8 @@ func (h *TeamsHandler) GetTeamInvites(w http.ResponseWriter, r *http.Request) {
 		Invites:    invites,
 		Page:       page,
 		TotalPages: int(totalPages),
-		IsOwner:    isOwner,
+		IsOwner:    perms.IsOwner,
+		IsCoOwner:  perms.IsCoOwner,
 	}
 
 	if err := templates[conf.TeamInvitesTemplate].Execute(w, routeutils.WithSessionMessages(vm, r, w)); err != nil {
@@ -489,9 +524,9 @@ func (h *TeamsHandler) PostGenerateInvite(w http.ResponseWriter, r *http.Request
 	teamID := strings.TrimSpace(chi.URLParam(r, "id"))
 	lang := routeutils.ResolveLanguage(r, user)
 
-	isOwner, _ := h.teamSrvc.IsTeamOwner(teamID, user.ID)
-	if !user.IsAdmin && !isOwner {
-		routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_team_owner"))
+	perms, _ := h.teamSrvc.GetUserPermissions(teamID, user.ID)
+	if !user.IsAdmin && !perms.CanManageInvites {
+		routeutils.SetError(r, w, i18n.Translate(lang, "flash.not_authorized_invites"))
 		http.Redirect(w, r, fmt.Sprintf("%s/teams/%s", h.config.Server.BasePath, teamID), http.StatusFound)
 		return
 	}
@@ -525,7 +560,8 @@ func (h *TeamsHandler) PostGenerateInvite(w http.ResponseWriter, r *http.Request
 		InviteURL:  inviteURL,
 		Page:       1,
 		TotalPages: int(totalPages),
-		IsOwner:    isOwner,
+		IsOwner:    perms.IsOwner,
+		IsCoOwner:  perms.IsCoOwner,
 	}
 
 	if err := templates[conf.TeamInvitesTemplate].Execute(w, routeutils.WithSessionMessages(vm, r, w)); err != nil {

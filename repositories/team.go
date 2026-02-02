@@ -168,6 +168,12 @@ func (r *TeamRepository) TransferOwnership(teamID, newOwnerID string) error {
 	})
 }
 
+func (r *TeamRepository) UpdateMemberRole(teamID, userID, newRole string) error {
+	return r.db.Model(&models.TeamMember{}).
+		Where("team_id = ? AND user_id = ?", teamID, userID).
+		Update("role", newRole).Error
+}
+
 func (r *TeamRepository) CountByTeam(teamID string) (int64, error) {
 	var count int64
 	err := r.db.
