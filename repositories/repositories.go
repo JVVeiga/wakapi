@@ -50,7 +50,7 @@ type IHeartbeatRepository interface {
 	DeleteBefore(time.Time) error
 	DeleteByUser(*models.User) error
 	DeleteByUserBefore(*models.User, time.Time) error
-	GetUserProjectStats(*models.User, time.Time, time.Time, int, int) ([]*models.ProjectStats, error)
+	GetUserProjectStats(*models.User, time.Time, time.Time, string, int, int) ([]*models.ProjectStats, error)
 	GetUserAgentsByUser(user *models.User) ([]*models.UserAgent, error)
 }
 
@@ -190,4 +190,13 @@ type IMonitoredSiteRepository interface {
 	Insert(*models.MonitoredSite) (*models.MonitoredSite, error)
 	Update(*models.MonitoredSite) (*models.MonitoredSite, error)
 	Delete(uint) error
+}
+
+type IWebAuthnRepository interface {
+	IBaseRepository
+	Insert(*models.WebAuthnCredential) (*models.WebAuthnCredential, error)
+	GetByUser(string) ([]*models.WebAuthnCredential, error)
+	GetByUserAndName(string, string) (*models.WebAuthnCredential, error)
+	Update(*models.WebAuthnCredential) error
+	Delete(*models.WebAuthnCredential) error
 }

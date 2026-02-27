@@ -62,12 +62,6 @@ If you want to try out a free, hosted cloud service, all you need to do is creat
 $ curl -L https://wakapi.dev/get | bash
 ```
 
-**Alternatively** using [eget](https://github.com/zyedidia/eget):
-
-```bash
-$ eget muety/wakapi
-```
-
 ### 🐳 Option 3: Use Docker
 
 ```bash
@@ -83,6 +77,7 @@ $ docker run -d \
   -e "WAKAPI_PASSWORD_SALT=$SALT" \
   -v wakapi-data:/data \
   --name wakapi \
+  --restart unless-stopped \
   ghcr.io/muety/wakapi:latest
 ```
 
@@ -152,6 +147,8 @@ This can be configured either on the **client-side (preferred)** on a system-wid
 
 **Example:**
 ```ini
+[settings]
+api_key = defaults-to-this-api-key-when-not-defined-below
 [api_urls]
 .* = https://wakapi.dev/api|wakapi-api-key
 .* = https://api.wakatime.com/api/v1|waka-api-key
@@ -199,6 +196,7 @@ You can specify configuration options either via a config file (default: `config
 | `server.base_path` /<br> `WAKAPI_BASE_PATH`                                                 | `/`                                              | Web base path (change when running behind a proxy under a sub-path)                                                                                                             |
 | `server.public_url` /<br> `WAKAPI_PUBLIC_URL`                                               | `http://localhost:3000`                          | URL at which your Wakapi instance can be found publicly                                                                                                                         |
 | `security.disable_local_auth` /<br> `WAKAPI_DISABLE_LOCAL_AUTH`                             | `false`                                          | Disables login via local credentials (username and password) to enforce OIDC provider login                                                                                     |
+| `security.disable_webauthn` /<br> `WAKAPI_DISABLE_WEBAUTHN`                                 | `true`                                           | Disables login via WebAuthn (security keys, biometrics, etc.)                                                                                                                   |
 | `security.password_salt` /<br> `WAKAPI_PASSWORD_SALT`                                       | -                                                | Pepper to use for password hashing                                                                                                                                              |
 | `security.insecure_cookies` /<br> `WAKAPI_INSECURE_COOKIES`                                 | `true`                                           | Whether or not to allow cookies over HTTP. For production, it is **highly recommended** to serve Wakapi via HTTPS and set this to `false`.                                      |
 | `security.cookie_max_age` /<br> `WAKAPI_COOKIE_MAX_AGE`                                     | `172800`                                         | Lifetime of authentication cookies in seconds or `0` to use [Session](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Define_the_lifetime_of_a_cookie) cookies        |
@@ -221,6 +219,8 @@ You can specify configuration options either via a config file (default: `config
 | `security.oidc[0].client_id` /<br> `WAKAPI_OIDC_PROVIDERS_0_CLIENT_ID`                      | -                                                | OAuth client name with this provider                                                                                                                                            |
 | `security.oidc[0].client_secret` /<br> `WAKAPI_OIDC_PROVIDERS_0_CLIENT_SECRET`              | -                                                | OAuth client secret with this provider                                                                                                                                          |
 | `security.oidc[0].endpoint` /<br> `WAKAPI_OIDC_PROVIDERS_0_ENDPOINT`                        | -                                                | OpenID Connect provider API entrypoint (for [discovery](https://openid.net/specs/openid-connect-discovery-1_0.html))                                                            |
+| `security.oidc[0].username_claim` /<br> `WAKAPI_OIDC_PROVIDERS_0_USERNAME_CLAIM`            | -                                                | Optionally spcified custom OIDC ID token claim to read username from (by `preferred_username`, `nickname` and `sub` are checked)                                                |
+| `security.oidc[0].scopes` /<br> `WAKAPI_OIDC_PROVIDERS_0_SCOPES`                            | -                                                | Additional OAuth scopes to request beyond `openid`, `profile` and `email` (to be used in custom username claim)                                                                 |
 | `db.host` /<br> `WAKAPI_DB_HOST`                                                            | -                                                | Database host                                                                                                                                                                   |
 | `db.port` /<br> `WAKAPI_DB_PORT`                                                            | -                                                | Database port                                                                                                                                                                   |
 | `db.socket` /<br> `WAKAPI_DB_SOCKET`                                                        | -                                                | Database UNIX socket (alternative to `host`) (for MySQL only)                                                                                                                   |

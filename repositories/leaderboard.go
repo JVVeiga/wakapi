@@ -61,7 +61,7 @@ func (r *LeaderboardRepository) GetAllAggregatedByInterval(key *models.IntervalK
 	var items []*models.LeaderboardItemRanked
 	subq := r.db.
 		Table("leaderboard_items").
-		Select("*, rank() over (partition by \"key\" order by total desc) as \"rank\"").
+		Select("*, rank() over (partition by lower(\"key\") order by total desc) as \"rank\"").
 		Where("\"interval\" in ?", *key)
 	subq = utils.WhereNullable(subq, "\"by\"", by)
 
@@ -78,7 +78,7 @@ func (r *LeaderboardRepository) GetAggregatedByUserAndInterval(userId string, ke
 	var items []*models.LeaderboardItemRanked
 	subq := r.db.
 		Table("leaderboard_items").
-		Select("*, rank() over (partition by \"key\" order by total desc) as \"rank\"").
+		Select("*, rank() over (partition by lower(\"key\") order by total desc) as \"rank\"").
 		Where("\"interval\" in ?", *key)
 	subq = utils.WhereNullable(subq, "\"by\"", by)
 

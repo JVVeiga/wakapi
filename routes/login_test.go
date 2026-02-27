@@ -31,6 +31,7 @@ type LoginHandlerTestSuite struct {
 	OidcMock              *mockoidc.MockOIDC
 	UserService           *mocks.UserServiceMock
 	KeyValueService       *mocks.KeyValueServiceMock
+	WebAuthnService       *mocks.WebAuthnServiceMock
 	Cfg                   *config.Config
 	Sut                   *LoginHandler
 	OidcUserNew           *mockoidc.MockUser
@@ -90,6 +91,7 @@ func (suite *LoginHandlerTestSuite) TearDownSuite() {
 func (suite *LoginHandlerTestSuite) BeforeTest(suiteName, testName string) {
 	suite.UserService = new(mocks.UserServiceMock)
 	suite.KeyValueService = new(mocks.KeyValueServiceMock)
+	suite.WebAuthnService = new(mocks.WebAuthnServiceMock)
 
 	cfg := config.Empty()
 	cfg.App.DefaultLanguage = "en"
@@ -106,7 +108,7 @@ func (suite *LoginHandlerTestSuite) BeforeTest(suiteName, testName string) {
 	suite.resetOidcMockTtl()
 	suite.setupOidcProvider(testProvider)
 
-	suite.Sut = NewLoginHandler(suite.UserService, nil, suite.KeyValueService)
+	suite.Sut = NewLoginHandler(suite.UserService, nil, suite.KeyValueService, suite.WebAuthnService)
 	Init() // load templates
 }
 
@@ -121,8 +123,6 @@ func (suite *LoginHandlerTestSuite) TestGetLogin_OnlyLocalAuth() {
 
 	r := httptest.NewRequest(http.MethodGet, "/login", nil)
 	w := httptest.NewRecorder()
-
-	suite.UserService.On("Count").Return(1, nil)
 
 	suite.Sut.GetIndex(w, r)
 	body, _ := io.ReadAll(w.Body)
@@ -140,8 +140,6 @@ func (suite *LoginHandlerTestSuite) TestGetLogin_LocalAuthAndOIDC() {
 
 	r := httptest.NewRequest(http.MethodGet, "/login", nil)
 	w := httptest.NewRecorder()
-
-	suite.UserService.On("Count").Return(1, nil)
 
 	suite.Sut.GetIndex(w, r)
 	body, _ := io.ReadAll(w.Body)
@@ -176,8 +174,6 @@ func (suite *LoginHandlerTestSuite) TestGetLogin_TwoOidc() {
 	r := httptest.NewRequest(http.MethodGet, "/login", nil)
 	w := httptest.NewRecorder()
 
-	suite.UserService.On("Count").Return(1, nil)
-
 	suite.Sut.GetIndex(w, r)
 	body, _ := io.ReadAll(w.Body)
 
@@ -196,8 +192,6 @@ func (suite *LoginHandlerTestSuite) TestGetLogin_NoAuthenticationMethod() {
 
 	r := httptest.NewRequest(http.MethodGet, "/login", nil)
 	w := httptest.NewRecorder()
-
-	suite.UserService.On("Count").Return(1, nil)
 
 	suite.Sut.GetIndex(w, r)
 	body, _ := io.ReadAll(w.Body)
@@ -238,8 +232,6 @@ func (suite *LoginHandlerTestSuite) TestPostLogin_EmptyLoginForm() {
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 
-	suite.UserService.On("Count").Return(1, nil)
-
 	suite.Sut.PostLogin(w, r)
 	body, _ := io.ReadAll(w.Body)
 
@@ -260,7 +252,6 @@ func (suite *LoginHandlerTestSuite) TestPostLogin_NonExistingUser() {
 
 	suite.UserService.On("GetUserById", "nonexisting").Return(nil, errors.New(""))
 	suite.UserService.On("GetUserByEmail", "nonexisting").Return(nil, errors.New(""))
-	suite.UserService.On("Count").Return(1, nil)
 
 	suite.Sut.PostLogin(w, r)
 	body, _ := io.ReadAll(w.Body)
@@ -281,7 +272,6 @@ func (suite *LoginHandlerTestSuite) TestPostLogin_WrongPassword() {
 	w := httptest.NewRecorder()
 
 	suite.UserService.On("GetUserById", testUserExistingId).Return(suite.TestUser, nil)
-	suite.UserService.On("Count").Return(1, nil)
 
 	suite.Sut.PostLogin(w, r)
 	body, _ := io.ReadAll(w.Body)
@@ -302,8 +292,6 @@ func (suite *LoginHandlerTestSuite) TestPostLogin_LocalAuthenticationDisabled_No
 	r := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
-
-	suite.UserService.On("Count").Return(1, nil)
 
 	suite.Sut.PostLogin(w, r)
 	body, _ := io.ReadAll(w.Body)
@@ -354,14 +342,12 @@ func (suite *LoginHandlerTestSuite) TestPostSignup_InvalidForm() {
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 
-	suite.UserService.On("Count", mock.Anything).Return(1, nil)
 	suite.Cfg.Security.AllowSignup = true
 	suite.Cfg.Security.OidcAllowSignup = false
 
 	suite.Sut.PostSignup(w, r)
 	body, _ := io.ReadAll(w.Body)
 
-	suite.UserService.AssertExpectations(suite.T())
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 	assert.Contains(suite.T(), string(body), "Invalid username")
 }
@@ -402,12 +388,9 @@ func (suite *LoginHandlerTestSuite) TestPostSignup_SignupDisabled() {
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 
-	suite.UserService.On("Count", mock.Anything).Return(1, nil)
-
 	suite.Sut.PostSignup(w, r)
 	body, _ := io.ReadAll(w.Body)
 
-	suite.UserService.AssertExpectations(suite.T())
 	assert.Equal(suite.T(), http.StatusForbidden, w.Code)
 	assert.Contains(suite.T(), string(body), "Registration is disabled on this server")
 }
@@ -425,12 +408,9 @@ func (suite *LoginHandlerTestSuite) TestPostSignup_LocalAuthenticationDisabled()
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 
-	suite.UserService.On("Count", mock.Anything).Return(1, nil)
-
 	suite.Sut.PostSignup(w, r)
 	body, _ := io.ReadAll(w.Body)
 
-	suite.UserService.AssertExpectations(suite.T())
 	assert.Equal(suite.T(), http.StatusForbidden, w.Code)
 	assert.Contains(suite.T(), string(body), "Local authentication is disabled on this server.")
 }
@@ -460,7 +440,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLogin_NoMatchingProvider() {
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_Success() {
-	url := suite.authorizeUser(suite.OidcUserExisting)
+	url := suite.authorizeUser(suite.OidcUserExisting, testProvider)
 	r := httptest.NewRequest(http.MethodGet, url, nil)
 	r = WithUrlParam(r, "provider", testProvider)
 	w := httptest.NewRecorder()
@@ -482,7 +462,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_Success_CreateUser(
 	suite.Cfg.Security.AllowSignup = false
 	suite.Cfg.Security.OidcAllowSignup = true
 
-	url := suite.authorizeUser(suite.OidcUserNew)
+	url := suite.authorizeUser(suite.OidcUserNew, testProvider)
 	r := httptest.NewRequest(http.MethodGet, url, nil)
 	r = WithUrlParam(r, "provider", testProvider)
 	w := httptest.NewRecorder()
@@ -511,11 +491,84 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_Success_CreateUser(
 	assert.Contains(suite.T(), w.Header().Get("Set-Cookie"), "wakapi_auth=")
 }
 
+func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_Success_CreateUser_CustomUsernameClaim() {
+	suite.Cfg.Security.AllowSignup = false
+	suite.Cfg.Security.OidcAllowSignup = true
+
+	const customClaimName = "custom_username"
+	const customUsername = "custom_user_from_claim"
+
+	config.WithOidcProvider(suite.Cfg, "custom-claim-provider", suite.OidcMock.ClientID, suite.OidcMock.ClientSecret, suite.OidcMock.Addr()+"/oidc", customClaimName)
+
+	customUser := &WakapiMockOIDCUser{
+		MockUser: mockoidc.MockUser{
+			Subject:           "custom-sub-123",
+			Email:             "custom@example.org",
+			PreferredUsername: "preferred_user",
+		},
+		CustomClaimName:  customClaimName,
+		CustomClaimValue: customUsername,
+	}
+
+	url := suite.authorizeUser(customUser, "custom-claim-provider")
+	r := httptest.NewRequest(http.MethodGet, url, nil)
+	r = WithUrlParam(r, "provider", "custom-claim-provider")
+	w := httptest.NewRecorder()
+
+	routeutils.SetOidcState(testOauthState, r, w)
+	suite.UserService.On("GetUserByOidc", "custom-claim-provider", customUser.Subject).Return(nil, errors.New(""))
+	suite.UserService.On("GetUserById", customUsername).Return(nil, errors.New(""))
+	suite.UserService.On("CreateOrGet", mock.Anything, mock.Anything).Return(suite.TestUser, true, nil)
+	suite.UserService.On("Update", mock.Anything).Return(suite.TestUser, nil)
+
+	suite.Sut.GetOidcCallback(w, r)
+
+	argSignup := suite.UserService.Calls[2].Arguments[0].(*models.Signup)
+	argIsAdmin := suite.UserService.Calls[2].Arguments[1].(bool)
+
+	suite.UserService.AssertExpectations(suite.T())
+	// verify that the username comes from the custom claim, not preferred_username
+	assert.Equal(suite.T(), customUsername, argSignup.Username)
+	assert.Equal(suite.T(), customUser.Email, argSignup.Email)
+	assert.Equal(suite.T(), customUser.Subject, argSignup.OidcSubject)
+	assert.Equal(suite.T(), "custom-claim-provider", argSignup.OidcProvider)
+	assert.NotEmpty(suite.T(), argSignup.Password)
+	assert.False(suite.T(), argIsAdmin)
+	assert.Equal(suite.T(), http.StatusFound, w.Code)
+	assert.Empty(suite.T(), suite.getSessionError(r))
+	assert.Equal(suite.T(), "/summary", w.Header().Get("Location"))
+	assert.Contains(suite.T(), w.Header().Get("Set-Cookie"), "wakapi_auth=")
+}
+
+func (suite *LoginHandlerTestSuite) TestGetOidcLogin_CustomScopesRequested() {
+	customScopes := []string{"groups", "roles", "offline_access"}
+	config.WithOidcProviderAndScopes(suite.Cfg, "custom-scopes-provider", suite.OidcMock.ClientID, suite.OidcMock.ClientSecret, suite.OidcMock.Addr()+"/oidc", "", customScopes)
+
+	r := httptest.NewRequest(http.MethodGet, "/oidc/{provider}/login", nil)
+	r = WithUrlParam(r, "provider", "custom-scopes-provider")
+	w := httptest.NewRecorder()
+
+	suite.Sut.GetOidcLogin(w, r)
+
+	assert.Equal(suite.T(), http.StatusFound, w.Code)
+	location := w.Header().Get("Location")
+	assert.True(suite.T(), strings.HasPrefix(location, suite.OidcMock.AuthorizationEndpoint()))
+
+	// verify that custom (and default) scopes are included in the auth url
+	for _, scope := range customScopes {
+		assert.Contains(suite.T(), location, "scope=")
+		assert.Contains(suite.T(), location, scope)
+	}
+	assert.Contains(suite.T(), location, "openid")
+	assert.Contains(suite.T(), location, "profile")
+	assert.Contains(suite.T(), location, "email")
+}
+
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_SignupDisabled() {
 	suite.Cfg.Security.AllowSignup = true
 	suite.Cfg.Security.OidcAllowSignup = false
 
-	url := suite.authorizeUser(suite.OidcUserNew)
+	url := suite.authorizeUser(suite.OidcUserNew, testProvider)
 	r := httptest.NewRequest(http.MethodGet, url, nil)
 	r = WithUrlParam(r, "provider", testProvider)
 	w := httptest.NewRecorder()
@@ -533,7 +586,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_SignupDisabled() {
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_InvalidState() {
-	url := suite.authorizeUser(suite.OidcUserNew)
+	url := suite.authorizeUser(suite.OidcUserNew, testProvider)
 	r := httptest.NewRequest(http.MethodGet, url, nil)
 	r = WithUrlParam(r, "provider", testProvider)
 	w := httptest.NewRecorder()
@@ -549,7 +602,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_InvalidState() {
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_AuthExchangeFailure() {
-	url := suite.authorizeUser(suite.OidcUserNew)
+	url := suite.authorizeUser(suite.OidcUserNew, testProvider)
 	r := httptest.NewRequest(http.MethodGet, url, nil)
 	r = WithUrlParam(r, "provider", testProvider)
 	w := httptest.NewRecorder()
@@ -569,7 +622,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_AuthExchangeFailure
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_IdTokenExpired() {
-	url := suite.authorizeUser(suite.OidcUserNew)
+	url := suite.authorizeUser(suite.OidcUserNew, testProvider)
 	r := httptest.NewRequest(http.MethodGet, url, nil)
 	r = WithUrlParam(r, "provider", testProvider)
 	w := httptest.NewRecorder()
@@ -600,7 +653,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_NoMatchingProvider(
 
 // Private utility methods
 func (suite *LoginHandlerTestSuite) setupOidcProvider(name string) {
-	config.WithOidcProvider(suite.Cfg, name, suite.OidcMock.ClientID, suite.OidcMock.ClientSecret, suite.OidcMock.Addr()+"/oidc")
+	config.WithOidcProvider(suite.Cfg, name, suite.OidcMock.ClientID, suite.OidcMock.ClientSecret, suite.OidcMock.Addr()+"/oidc", "")
 }
 
 func (suite *LoginHandlerTestSuite) getSessionError(r *http.Request) string {
@@ -611,7 +664,7 @@ func (suite *LoginHandlerTestSuite) getSessionError(r *http.Request) string {
 	return ""
 }
 
-func (suite *LoginHandlerTestSuite) authorizeUser(user *mockoidc.MockUser) string { // returns the location header's redirect url
+func (suite *LoginHandlerTestSuite) authorizeUser(user mockoidc.User, provider string) string {
 	r := httptest.NewRequest(http.MethodGet, suite.OidcMock.AuthorizationEndpoint(), nil)
 	q := r.URL.Query()
 	q.Set("code", testOauthCode)
@@ -619,7 +672,7 @@ func (suite *LoginHandlerTestSuite) authorizeUser(user *mockoidc.MockUser) strin
 	q.Set("response_type", "code")
 	q.Set("scope", "openid profile email")
 	q.Set("state", testOauthState)
-	q.Set("redirect_uri", fmt.Sprintf("/oidc/%s/callback", testProvider))
+	q.Set("redirect_uri", fmt.Sprintf("/oidc/%s/callback", provider))
 	r.URL.RawQuery = q.Encode()
 	w := httptest.NewRecorder()
 

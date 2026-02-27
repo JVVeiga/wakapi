@@ -375,6 +375,10 @@
   "projects.title": "Your Projects",
   "projects.description": "This is an overview of all your projects, ordered by recent activity. Color intensity indicates the overall activity on that project.",
   "projects.no_data": "No project data available, yet... Go start coding!",
+  "projects.no_match": "No projects matching your search were found.",
+  "projects.search_placeholder": "Search projects...",
+  "projects.search_button": "Search",
+  "projects.search_clear": "Clear",
 
   "time_picker.today": "Today",
   "time_picker.yesterday": "Yesterday",

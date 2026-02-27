@@ -4,6 +4,7 @@ import (
 	"time"
 
 	datastructure "github.com/duke-git/lancet/v2/datastructure/set"
+	"github.com/go-webauthn/webauthn/webauthn"
 	"gorm.io/gorm"
 
 	"github.com/muety/wakapi/models"
@@ -56,7 +57,7 @@ type IHeartbeatService interface {
 	DeleteBefore(time.Time) error
 	DeleteByUser(*models.User) error
 	DeleteByUserBefore(*models.User, time.Time) error
-	GetUserProjectStats(*models.User, time.Time, time.Time, *utils.PageParams, bool) ([]*models.ProjectStats, error)
+	GetUserProjectStats(*models.User, time.Time, time.Time, string, *utils.PageParams, bool) ([]*models.ProjectStats, error)
 	GetUserAgentsByUser(*models.User) ([]*models.UserAgent, error)
 }
 
@@ -157,6 +158,7 @@ type IUserService interface {
 	GetUserByUnsubscribeToken(string) (*models.User, error)
 	GetUserByStripeCustomerId(string) (*models.User, error)
 	GetUserByOidc(string, string) (*models.User, error)
+	GetUserByWebAuthnID(string) (*models.User, error)
 	GetAll() ([]*models.User, error)
 	GetAllPaginated(int, int) ([]*models.User, error)
 	GetAllMapped() (map[string]*models.User, error)
@@ -222,4 +224,13 @@ type IMonitoredSiteService interface {
 	Update(*models.MonitoredSite) (*models.MonitoredSite, error)
 	Delete(uint) error
 	Count() (int, error)
+}
+
+type IWebAuthnService interface {
+	CreateCredential(*webauthn.Credential, *models.User, string) (*models.WebAuthnCredential, error)
+	GetCredentialsByUser(*models.User) ([]*models.WebAuthnCredential, error)
+	GetCredentialByUserAndName(*models.User, string) (*models.WebAuthnCredential, error)
+	LoadCredentialIntoUser(*models.User) error
+	DeleteCredential(*models.WebAuthnCredential) error
+	UpdateCredential(*webauthn.Credential) error
 }

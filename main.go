@@ -72,6 +72,7 @@ var (
 	apiKeyRepository          repositories.IApiKeyRepository
 	teamRepository            repositories.ITeamRepository
 	monitoredSiteRepository   repositories.IMonitoredSiteRepository
+	webAuthnRepository        repositories.IWebAuthnRepository
 )
 
 var (
@@ -94,6 +95,7 @@ var (
 	apiKeyService          services.IApiKeyService
 	teamService            services.ITeamService
 	monitoredSiteService   services.IMonitoredSiteService
+	webAuthnService        services.IWebAuthnService
 )
 
 // TODO: Refactor entire project to be structured after business domains
@@ -191,6 +193,7 @@ func main() {
 	apiKeyRepository = repositories.NewApiKeyRepository(db)
 	teamRepository = repositories.NewTeamRepository(db)
 	monitoredSiteRepository = repositories.NewMonitoredSiteRepository(db)
+	webAuthnRepository = repositories.NewWebAuthnRepository(db)
 
 	// Services
 	mailService = mail.NewMailService()
@@ -211,6 +214,7 @@ func main() {
 	diagnosticsService = services.NewDiagnosticsService(diagnosticsRepository)
 	housekeepingService = services.NewHousekeepingService(userService, heartbeatService, summaryService, aliasRepository) // can pass any repo here
 	miscService = services.NewMiscService(userService, heartbeatService, summaryService, keyValueService, mailService)
+	webAuthnService = services.NewWebAuthnService(webAuthnRepository)
 
 	if config.App.LeaderboardEnabled {
 		leaderboardService = services.NewLeaderboardService(leaderboardRepository, summaryService, userService, teamService)
@@ -256,11 +260,11 @@ func main() {
 
 	// MVC Handlers
 	summaryHandler := routes.NewSummaryHandler(summaryService, userService, heartbeatService, durationService, aliasService)
-	settingsHandler := routes.NewSettingsHandler(userService, heartbeatService, durationService, summaryService, aliasService, aggregationService, languageMappingService, projectLabelService, keyValueService, mailService, apiKeyService)
+	settingsHandler := routes.NewSettingsHandler(userService, heartbeatService, durationService, summaryService, aliasService, aggregationService, languageMappingService, projectLabelService, keyValueService, mailService, apiKeyService, webAuthnService)
 	subscriptionHandler := routes.NewSubscriptionHandler(userService, mailService, keyValueService)
 	projectsHandler := routes.NewProjectsHandler(userService, heartbeatService)
 	homeHandler := routes.NewHomeHandler(userService, keyValueService)
-	loginHandler := routes.NewLoginHandler(userService, mailService, keyValueService)
+	loginHandler := routes.NewLoginHandler(userService, mailService, keyValueService, webAuthnService)
 	imprintHandler := routes.NewImprintHandler(keyValueService)
 	setupHandler := routes.NewSetupHandler(userService)
 	leaderboardHandler := condition.Ternary[bool, routes.Handler](config.App.LeaderboardEnabled, routes.NewLeaderboardHandler(userService, leaderboardService, teamService), routes.NewNoopHandler())

@@ -375,6 +375,10 @@
   "projects.title": "Seus Projetos",
   "projects.description": "Esta é uma visão geral de todos os seus projetos, ordenados por atividade recente. A intensidade da cor indica a atividade geral naquele projeto.",
   "projects.no_data": "Nenhum dado de projeto disponível ainda... Comece a programar!",
+  "projects.no_match": "Nenhum projeto encontrado para sua busca.",
+  "projects.search_placeholder": "Buscar projetos...",
+  "projects.search_button": "Buscar",
+  "projects.search_clear": "Limpar",
 
   "time_picker.today": "Hoje",
   "time_picker.yesterday": "Ontem",

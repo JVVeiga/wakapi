@@ -14,7 +14,9 @@ import (
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/duke-git/lancet/v2/strutil"
 
+	"encoding/gob"
 	"log/slog"
+	"net/url"
 
 	"github.com/gofrs/uuid/v5"
 	"github.com/gorilla/securecookie"
@@ -22,6 +24,8 @@ import (
 	"github.com/muety/wakapi/data"
 	"github.com/muety/wakapi/utils"
 	"github.com/robfig/cron/v3"
+
+	"github.com/go-webauthn/webauthn/webauthn"
 )
 
 const (
@@ -45,6 +49,8 @@ const (
 	CookieKeyAuth                  = "wakapi_auth"
 	SessionValueOidcState          = "oidc_state"
 	SessionValueOidcIdTokenPayload = "oidc_id_token"
+	SessionValueWebAuthn           = "webauthn_session"
+	SessionValueWebAuthnExpiresAt  = "webauthn_session_expires_at"
 
 	SimpleDateFormat     = "2006-01-02"
 	SimpleDateTimeFormat = "2006-01-02 15:04:05"
@@ -73,6 +79,7 @@ const (
 var emailProviders = []string{
 	MailProviderSmtp,
 }
+var WebAuthn *webauthn.WebAuthn
 
 // first wakatime commit was on this day ;-) so no real heartbeats should exist before
 // https://github.com/wakatime/legacy-python-cli/commit/3da94756aa1903c1cca5035803e3f704e818c086
@@ -120,6 +127,7 @@ type securityConfig struct {
 	AllowSignup      bool `yaml:"allow_signup" default:"true" env:"WAKAPI_ALLOW_SIGNUP"`
 	OidcAllowSignup  bool `yaml:"oidc_allow_signup" default:"true" env:"WAKAPI_OIDC_ALLOW_SIGNUP"`
 	DisableLocalAuth bool `yaml:"disable_local_auth" default:"false" env:"WAKAPI_DISABLE_LOCAL_AUTH"`
+	DisableWebAuthn  bool `yaml:"disable_webauthn" default:"true" env:"WAKAPI_DISABLE_WEBAUTHN"`
 	SignupCaptcha    bool `yaml:"signup_captcha" default:"false" env:"WAKAPI_SIGNUP_CAPTCHA"`
 	InviteCodes      bool `yaml:"invite_codes" default:"true" env:"WAKAPI_INVITE_CODES"`
 	ExposeMetrics    bool `yaml:"expose_metrics" default:"false" env:"WAKAPI_EXPOSE_METRICS"`
@@ -210,11 +218,13 @@ type SMTPMailConfig struct {
 
 type oidcProviderConfig struct {
 	// for environment variables format, see renameEnvVars() down below
-	Name         string `yaml:"name"`
-	DisplayName  string `yaml:"display_name"` // optional
-	ClientID     string `yaml:"client_id"`
-	ClientSecret string `yaml:"client_secret"`
-	Endpoint     string `yaml:"endpoint"` // base url from which auto-discovery (.well-known/openid-configuration) can be found
+	Name          string   `yaml:"name"`
+	DisplayName   string   `yaml:"display_name"` // optional
+	ClientID      string   `yaml:"client_id"`
+	ClientSecret  string   `yaml:"client_secret"`
+	Endpoint      string   `yaml:"endpoint"`       // base url from which auto-discovery (.well-known/openid-configuration) can be found
+	UsernameClaim string   `yaml:"username_claim"` // optional: claim to use as username (default: preferred_username -> nickname -> sub)
+	Scopes        []string `yaml:"scopes"`         // optional: additional scopes beyond openid, profile, email
 }
 
 type Config struct {
@@ -558,6 +568,7 @@ func Get() *Config {
 }
 
 func Load(configFlag string, version string) *Config {
+	loadSecretFiles()
 	renameEnvVars()
 
 	config := &Config{}
@@ -698,6 +709,7 @@ func Load(configFlag string, version string) *Config {
 
 	// post config-load tasks
 	initOpenIDConnect(config)
+	InitWebAuthn(config)
 
 	return Get()
 }
@@ -727,6 +739,26 @@ func initOpenIDConnect(config *Config) {
 	}
 }
 
+func InitWebAuthn(config *Config) {
+	gob.Register(&webauthn.SessionData{})
+
+	parsedURL, err := url.Parse(config.Server.PublicUrl)
+	if err != nil {
+		slog.Error("webauthn init error", "error", err)
+	}
+
+	webauthnConfig := &webauthn.Config{
+		RPDisplayName: "Wakapi",
+		RPID:          parsedURL.Hostname(),              // without "https://"
+		RPOrigins:     []string{config.Server.PublicUrl}, // with "https://"
+	}
+
+	WebAuthn, err = webauthn.New(webauthnConfig)
+	if err != nil {
+		Log().Fatal("webauthn init error", "error", err)
+	}
+}
+
 func renameEnvVars() {
 	// Hacky way to get configor to read a slice of structs from environment variables using custom keys.
 	// Specifically, for the OpenID Connect providers config, configor would expect variables in this format:
@@ -752,6 +784,39 @@ func renameEnvVars() {
 				slog.Error("failed to rename env. variable", "key", k, "value", v, "error", err)
 				os.Exit(1)
 			}
+			os.Unsetenv(k)
+		}
+	}
+}
+
+// Support for reading Docker secrets from mounted files, whose filenames are provided as environment variables like WAKAPI_PASSWORD_SALT_FILE
+// https://github.com/muety/wakapi?tab=readme-ov-file#docker-compose
+// https://hub.docker.com/_/mysql#docker-secrets
+// https://github.com/muety/wakapi/pull/679/changes
+// We used to source those variables using bash (see https://github.com/muety/wakapi/blob/7fa0a6f78ce56957f4f5a5c5abd68fc08cde12de/entrypoint.sh#L7),
+// but then switched to do this programmatically from within Wakapi itself so we don't need bash (or any other shell) and thus are free to use distroless Docker images.
+func loadSecretFiles() {
+	for _, e := range os.Environ() {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		k, v := parts[0], parts[1]
+
+		if strings.HasSuffix(k, "_FILE") {
+			key := strings.TrimSuffix(k, "_FILE")
+			if os.Getenv(key) != "" {
+				slog.Error("both environment variables are set (but are exclusive)", "var", key, "fileVar", k)
+				os.Exit(1)
+			}
+
+			val, err := os.ReadFile(v)
+			if err != nil {
+				slog.Error("failed to read secret file", "file", v, "error", err)
+				os.Exit(1)
+			}
+
+			os.Setenv(key, strings.TrimSpace(string(val)))
 			os.Unsetenv(k)
 		}
 	}

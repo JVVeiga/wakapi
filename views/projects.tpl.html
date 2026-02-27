@@ -17,6 +17,16 @@
             {{ .T "projects.description" }}
         </p>
 
+        <form method="GET" action="projects" class="mb-4">
+            <div class="flex items-center space-x-2">
+                <input type="text" name="q" value="{{ .Query }}" placeholder="{{ .T "projects.search_placeholder" }}" aria-label="{{ .T "projects.search_placeholder" }}" class="input-default text-sm max-w-sm">
+                <button type="submit" class="btn-primary">{{ .T "projects.search_button" }}</button>
+                {{ if .Query }}
+                <a href="projects" class="btn-default">{{ .T "projects.search_clear" }}</a>
+                {{ end }}
+            </div>
+        </form>
+
         {{ if len .Projects }}
         <ul class="inline-grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4 text-foreground">
             {{ range $i, $project := .Projects }}
@@ -36,12 +46,16 @@
             {{ end }}
         </ul>
         {{ else }}
+        {{ if .Query }}
+        <p class="text-sm text-foreground">{{ .T "projects.no_match" }}</p>
+        {{ else }}
         <p class="text-sm text-foreground">{{ .T "projects.no_data" }}</p>
+        {{ end }}
         {{ end }}
 
         <div class="mt-16 flex justify-center">
-            <a class="bg-focused hover:bg-card text-small text-foreground py-2 px-4 rounded-l-full mr-px text-center text-sm {{ if le .PageParams.Page 1 }}disabled{{ end }}" style="width: 90px" href="projects?page={{ add .PageParams.Page -1 }}">{{ .T "common.previous" }}</a>
-            <a class="bg-focused hover:bg-card text-small text-foreground py-2 px-4 rounded-r-full ml-px text-center text-sm {{ if lt (len .Projects) .PageParams.PageSize }}disabled{{ end }}" style="width: 90px" href="projects?page={{ add .PageParams.Page 1 }}">{{ .T "common.next" }}</a>
+            <a class="bg-focused hover:bg-card text-small text-foreground py-2 px-4 rounded-l-full mr-px text-center text-sm {{ if le .PageParams.Page 1 }}disabled{{ end }}" style="width: 90px" href="projects?page={{ add .PageParams.Page -1 }}{{ if .Query }}&q={{ .Query | urlquery }}{{ end }}">{{ .T "common.previous" }}</a>
+            <a class="bg-focused hover:bg-card text-small text-foreground py-2 px-4 rounded-r-full ml-px text-center text-sm {{ if lt (len .Projects) .PageParams.PageSize }}disabled{{ end }}" style="width: 90px" href="projects?page={{ add .PageParams.Page 1 }}{{ if .Query }}&q={{ .Query | urlquery }}{{ end }}">{{ .T "common.next" }}</a>
         </div>
     </div>
 </main>
