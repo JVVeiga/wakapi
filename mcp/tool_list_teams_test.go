@@ -83,7 +83,7 @@ func TestListTeams_NoTeams(t *testing.T) {
 	result, err := handler(ctx, makeRequest(nil))
 	assert.Nil(t, err)
 	text := extractText(result)
-	assert.Contains(t, text, "nenhum time")
+	assert.Contains(t, text, "Nenhum time")
 }
 
 func TestListTeams_Unauthenticated(t *testing.T) {

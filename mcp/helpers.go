@@ -36,9 +36,11 @@ func (s *MCPServer) checkTeamAccess(ctx context.Context, teamID string) (*models
 		return nil, toolError("team_id é obrigatório")
 	}
 
-	isOwnerOrCoOwner, err := s.teamSrvc.IsTeamOwnerOrCoOwner(sanitizeInput(teamID), user.ID)
-	if err != nil || !isOwnerOrCoOwner {
-		return nil, toolError("Acesso negado: você não é owner/co-owner deste time")
+	if !user.IsAdmin {
+		isOwnerOrCoOwner, err := s.teamSrvc.IsTeamOwnerOrCoOwner(sanitizeInput(teamID), user.ID)
+		if err != nil || !isOwnerOrCoOwner {
+			return nil, toolError("Acesso negado: você não é owner/co-owner deste time")
+		}
 	}
 
 	return user, nil
@@ -55,9 +57,11 @@ func (s *MCPServer) checkMemberAccess(ctx context.Context, teamID, userID string
 		return nil, nil, toolError("user_id é obrigatório")
 	}
 
-	isMember, err := s.teamSrvc.IsTeamMember(teamID, sanitizeInput(userID))
-	if err != nil || !isMember {
-		return nil, nil, toolError("Usuário não é membro deste time")
+	if !requester.IsAdmin {
+		isMember, err := s.teamSrvc.IsTeamMember(teamID, sanitizeInput(userID))
+		if err != nil || !isMember {
+			return nil, nil, toolError("Usuário não é membro deste time")
+		}
 	}
 
 	targetUser, err := s.userSrvc.GetUserById(userID)

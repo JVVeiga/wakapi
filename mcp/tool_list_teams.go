@@ -7,11 +7,12 @@ import (
 
 	mcpgo "github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
+	"github.com/muety/wakapi/models"
 )
 
 func (s *MCPServer) listTeamsTool() (mcpgo.Tool, mcpserver.ToolHandlerFunc) {
 	tool := mcpgo.NewTool("list_teams",
-		mcpgo.WithDescription("Lista os times que você lidera (owner ou co-owner). Use como ponto de partida para descobrir team_id e user_id dos membros."),
+		mcpgo.WithDescription("Lista os times que você lidera (owner ou co-owner). Admins veem todos os times. Use como ponto de partida para descobrir team_id e user_id dos membros."),
 	)
 
 	handler := func(ctx context.Context, request mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
@@ -20,25 +21,41 @@ func (s *MCPServer) listTeamsTool() (mcpgo.Tool, mcpserver.ToolHandlerFunc) {
 			return toolError("Unauthorized"), nil
 		}
 
-		teams, err := s.teamSrvc.GetByUser(user.ID)
+		var teams []*models.Team
+		var err error
+
+		if user.IsAdmin {
+			teams, err = s.teamSrvc.GetAll()
+		} else {
+			teams, err = s.teamSrvc.GetByUser(user.ID)
+		}
 		if err != nil {
 			return toolError("Erro ao buscar times"), nil
 		}
 
 		var sb strings.Builder
-		sb.WriteString("Times que você lidera:\n\n")
+		if user.IsAdmin {
+			sb.WriteString("Todos os times (admin):\n\n")
+		} else {
+			sb.WriteString("Times que você lidera:\n\n")
+		}
 
 		count := 0
 		for _, team := range teams {
-			isOwnerOrCoOwner, _ := s.teamSrvc.IsTeamOwnerOrCoOwner(team.ID, user.ID)
-			if !isOwnerOrCoOwner {
-				continue
+			if !user.IsAdmin {
+				isOwnerOrCoOwner, _ := s.teamSrvc.IsTeamOwnerOrCoOwner(team.ID, user.ID)
+				if !isOwnerOrCoOwner {
+					continue
+				}
 			}
 			count++
 
-			role := "co-owner"
-			if team.OwnerID == user.ID {
-				role = "owner"
+			role := "admin"
+			if !user.IsAdmin {
+				role = "co-owner"
+				if team.OwnerID == user.ID {
+					role = "owner"
+				}
 			}
 
 			members, _ := s.teamSrvc.GetMembers(team.ID)
@@ -53,7 +70,7 @@ func (s *MCPServer) listTeamsTool() (mcpgo.Tool, mcpserver.ToolHandlerFunc) {
 
 		if count == 0 {
 			sb.Reset()
-			sb.WriteString("Você não é owner ou co-owner de nenhum time.")
+			sb.WriteString("Nenhum time encontrado.")
 		}
 
 		return toolResult(sb.String()), nil

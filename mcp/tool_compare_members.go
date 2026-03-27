@@ -57,9 +57,11 @@ func (s *MCPServer) compareMembersTool() (mcpgo.Tool, mcpserver.ToolHandlerFunc)
 		rows := make([]memberRow, 0, len(userIDs))
 		for _, uid := range userIDs {
 			uid = sanitizeInput(uid)
-			isMember, err := s.teamSrvc.IsTeamMember(teamID, uid)
-			if err != nil || !isMember {
-				continue
+			if !requester.IsAdmin {
+				isMember, err := s.teamSrvc.IsTeamMember(teamID, uid)
+				if err != nil || !isMember {
+					continue
+				}
 			}
 
 			summary, err := s.fetchMemberSummary(uid, from, to, &models.Filters{})
