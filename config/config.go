@@ -227,6 +227,11 @@ type oidcProviderConfig struct {
 	Scopes        []string `yaml:"scopes"`         // optional: additional scopes beyond openid, profile, email
 }
 
+type mcpConfig struct {
+	Enabled bool   `yaml:"enabled" default:"false" env:"WAKAPI_MCP_ENABLED"`
+	Path    string `yaml:"path" default:"/mcp" env:"WAKAPI_MCP_PATH"`
+}
+
 type Config struct {
 	Env            string `default:"dev" env:"ENVIRONMENT"`
 	Version        string `yaml:"-"`
@@ -241,6 +246,7 @@ type Config struct {
 	Subscriptions  subscriptionsConfig
 	Sentry         sentryConfig
 	Mail           mailConfig
+	MCP            mcpConfig `yaml:"mcp"`
 }
 
 func (c *oidcProviderConfig) String() string {

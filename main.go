@@ -34,6 +34,7 @@ import (
 	"github.com/muety/wakapi/routes/api"
 	shieldsV1Routes "github.com/muety/wakapi/routes/compat/shields/v1"
 	wtV1Routes "github.com/muety/wakapi/routes/compat/wakatime/v1"
+	wakaMcp "github.com/muety/wakapi/mcp"
 	"github.com/muety/wakapi/routes/relay"
 	"github.com/muety/wakapi/services"
 	"github.com/muety/wakapi/services/mail"
@@ -344,6 +345,15 @@ func main() {
 	wakatimeV1MonitoredSitesHandler.RegisterRoutes(apiRouter)
 	shieldV1BadgeHandler.RegisterRoutes(apiRouter)
 	captchaHandler.RegisterRoutes(apiRouter)
+
+	// MCP Server
+	if config.MCP.Enabled {
+		mcpSrv := wakaMcp.NewMCPServer(
+			userService, teamService, summaryService,
+			heartbeatService, durationService, leaderboardService,
+		)
+		mcpSrv.RegisterRoutes(router)
+	}
 
 	// Static Routes
 	// https://github.com/golang/go/issues/43431

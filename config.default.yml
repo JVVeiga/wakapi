@@ -133,3 +133,7 @@ mail:
     username:
     password:
     tls:
+
+mcp:
+  enabled: false
+  path: /mcp
