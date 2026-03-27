@@ -149,3 +149,34 @@ POST /api/compat/wakatime/v1/users/{user}/heartbeats.bulk
 
 - **Full Access:** Pode enviar heartbeats e ler todos os dados
 - **Read Only:** Só pode ler dados (não pode enviar heartbeats)
+
+### Acesso a Dados de Outros Usuários via API
+
+Além do próprio usuário e admins, **owners e co-owners de times** podem consultar dados dos membros dos seus times via API. Isso se aplica a todos os endpoints GET da API WakaTime v1:
+
+| Endpoint | Owner/Co-owner pode acessar? |
+|----------|------------------------------|
+| `.../users/{user}/summaries` | Sim |
+| `.../users/{user}/stats/{range}` | Sim (sem restrição de range) |
+| `.../users/{user}/statusbar/{range}` | Sim |
+| `.../users/{user}/all_time_since_today` | Sim |
+| `.../users/{user}/projects` | Sim |
+| `.../users/{user}/heartbeats` | Sim |
+| `.../users/{user}/user_agents` | Sim |
+| `.../users/{user}` | Sim |
+| POST heartbeats | Não (apenas o próprio usuário) |
+
+**Exemplo de uso:**
+```bash
+# Owner consulta summaries de um membro do time
+curl -s \
+  "https://host/api/compat/wakatime/v1/users/MemberName/summaries?start=2026-03-13&end=2026-03-13" \
+  -H "Authorization: Basic $(echo -n 'API_KEY_DO_OWNER' | base64)"
+```
+
+**Regras de autorização (ordem de prioridade):**
+1. `{user}` = `current` → retorna dados do próprio usuário autenticado
+2. `{user}` = ID do próprio usuário → acesso direto
+3. Usuário autenticado é admin → acesso a qualquer usuário
+4. Usuário autenticado é owner/co-owner de um time que contém `{user}` → acesso permitido
+5. Caso contrário → 401 Unauthorized

@@ -17,12 +17,14 @@ type UserAgentsHandler struct {
 	config         *conf.Config
 	userSrvc       services.IUserService
 	heartbeatsSrvc services.IHeartbeatService
+	teamSrvc       services.ITeamService
 }
 
-func NewUserAgentsHandler(userService services.IUserService, heartbeatsService services.IHeartbeatService) *UserAgentsHandler {
+func NewUserAgentsHandler(userService services.IUserService, heartbeatsService services.IHeartbeatService, teamService services.ITeamService) *UserAgentsHandler {
 	return &UserAgentsHandler{
 		userSrvc:       userService,
 		heartbeatsSrvc: heartbeatsService,
+		teamSrvc:       teamService,
 		config:         conf.Get(),
 	}
 }
@@ -44,7 +46,7 @@ func (h *UserAgentsHandler) RegisterRoutes(router chi.Router) {
 // @Success 200 {object} v1.UserAgentsViewModel
 // @Router /compat/wakatime/v1/users/{user}/user_agents [get]
 func (h *UserAgentsHandler) Get(w http.ResponseWriter, r *http.Request) {
-	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current")
+	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current", h.teamSrvc)
 	if err != nil {
 		return // response was already sent by util function
 	}

@@ -12,7 +12,8 @@ import (
 
 // CheckEffectiveUser extracts the requested user from a URL (like '/users/{user}'), compares it with the currently authorized user and writes an HTTP error if they differ.
 // Fallback can be used to manually set a value for '{user}' if none is present.
-func CheckEffectiveUser(w http.ResponseWriter, r *http.Request, userService services.IUserService, fallback string) (*models.User, error) {
+// An optional ITeamService can be passed to allow team owners and co-owners to access their team members' data.
+func CheckEffectiveUser(w http.ResponseWriter, r *http.Request, userService services.IUserService, fallback string, teamSrvc ...services.ITeamService) (*models.User, error) {
 	respondError := func(code int, text string) (*models.User, error) {
 		err := errors.New(conf.ErrUnauthorized)
 		w.WriteHeader(http.StatusUnauthorized)
@@ -33,7 +34,11 @@ func CheckEffectiveUser(w http.ResponseWriter, r *http.Request, userService serv
 	}
 
 	if authorizedUser.ID != userParam && !authorizedUser.IsAdmin {
-		return respondError(http.StatusUnauthorized, conf.ErrUnauthorized)
+		if len(teamSrvc) > 0 && teamSrvc[0] != nil && HasTeamAccess(teamSrvc[0], authorizedUser.ID, userParam) {
+			// authorized via team ownership
+		} else {
+			return respondError(http.StatusUnauthorized, conf.ErrUnauthorized)
+		}
 	}
 
 	requestedUser, err := userService.GetUserById(userParam)
@@ -42,4 +47,18 @@ func CheckEffectiveUser(w http.ResponseWriter, r *http.Request, userService serv
 	}
 
 	return requestedUser, nil
+}
+
+// HasTeamAccess checks if requesterID is an owner or co-owner of any team that targetUserID belongs to.
+func HasTeamAccess(teamSrvc services.ITeamService, requesterID, targetUserID string) bool {
+	teams, err := teamSrvc.GetByUser(targetUserID)
+	if err != nil {
+		return false
+	}
+	for _, team := range teams {
+		if isOwnerOrCoOwner, _ := teamSrvc.IsTeamOwnerOrCoOwner(team.ID, requesterID); isOwnerOrCoOwner {
+			return true
+		}
+	}
+	return false
 }

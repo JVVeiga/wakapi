@@ -11,6 +11,7 @@ import (
 	"github.com/muety/wakapi/middlewares"
 	"github.com/muety/wakapi/models"
 	v1 "github.com/muety/wakapi/models/compat/wakatime/v1"
+	routeutils "github.com/muety/wakapi/routes/utils"
 	"github.com/muety/wakapi/services"
 )
 
@@ -18,12 +19,14 @@ type StatsHandler struct {
 	config      *conf.Config
 	userSrvc    services.IUserService
 	summarySrvc services.ISummaryService
+	teamSrvc    services.ITeamService
 }
 
-func NewStatsHandler(userService services.IUserService, summaryService services.ISummaryService) *StatsHandler {
+func NewStatsHandler(userService services.IUserService, summaryService services.ISummaryService, teamService services.ITeamService) *StatsHandler {
 	return &StatsHandler{
 		userSrvc:    userService,
 		summarySrvc: summaryService,
+		teamSrvc:    teamService,
 		config:      conf.Get(),
 	}
 }
@@ -95,7 +98,10 @@ func (h *StatsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	minStart := rangeTo.AddDate(0, 0, -requestedUser.ShareDataMaxDays)
-	if (authorizedUser == nil || requestedUser.ID != authorizedUser.ID) &&
+	isOwnData := authorizedUser != nil && requestedUser.ID == authorizedUser.ID
+	isAdmin := authorizedUser != nil && authorizedUser.IsAdmin
+	isTeamOwnerOrCoOwner := authorizedUser != nil && h.teamSrvc != nil && routeutils.HasTeamAccess(h.teamSrvc, authorizedUser.ID, requestedUser.ID)
+	if !isOwnData && !isAdmin && !isTeamOwnerOrCoOwner &&
 		rangeFrom.Before(minStart) && requestedUser.ShareDataMaxDays >= 0 {
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("requested time range too broad"))
@@ -123,7 +129,7 @@ func (h *StatsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	stats.Data.IsCodingActivityVisible = requestedUser.ShareDataMaxDays != 0
 	stats.Data.IsOtherUsageVisible = requestedUser.AnyDataShared()
 
-	if authorizedUser == nil || requestedUser.ID != authorizedUser.ID {
+	if authorizedUser == nil || (requestedUser.ID != authorizedUser.ID && !isAdmin && !isTeamOwnerOrCoOwner) {
 		// post filter stats according to user's given sharing permissions
 		if !requestedUser.ShareEditors {
 			stats.Data.Editors = make([]*v1.SummariesEntry, 0)

@@ -24,12 +24,14 @@ type HeartbeatsResult struct {
 type HeartbeatHandler struct {
 	userSrvc      services.IUserService
 	heartbeatSrvc services.IHeartbeatService
+	teamSrvc      services.ITeamService
 }
 
-func NewHeartbeatHandler(userService services.IUserService, heartbeatService services.IHeartbeatService) *HeartbeatHandler {
+func NewHeartbeatHandler(userService services.IUserService, heartbeatService services.IHeartbeatService, teamService services.ITeamService) *HeartbeatHandler {
 	return &HeartbeatHandler{
 		userSrvc:      userService,
 		heartbeatSrvc: heartbeatService,
+		teamSrvc:      teamService,
 	}
 }
 
@@ -50,7 +52,7 @@ func (h *HeartbeatHandler) RegisterRoutes(router chi.Router) {
 // @Failure 400 {string} string "bad date"
 // @Router /compat/wakatime/v1/users/{user}/heartbeats [get]
 func (h *HeartbeatHandler) Get(w http.ResponseWriter, r *http.Request) {
-	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current")
+	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current", h.teamSrvc)
 	if err != nil {
 		return // response was already sent by util function
 	}

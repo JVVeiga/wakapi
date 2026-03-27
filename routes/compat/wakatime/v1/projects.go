@@ -22,12 +22,14 @@ type ProjectsHandler struct {
 	config        *conf.Config
 	userSrvc      services.IUserService
 	heartbeatSrvc services.IHeartbeatService
+	teamSrvc      services.ITeamService
 }
 
-func NewProjectsHandler(userService services.IUserService, heartbeatsService services.IHeartbeatService) *ProjectsHandler {
+func NewProjectsHandler(userService services.IUserService, heartbeatsService services.IHeartbeatService, teamService services.ITeamService) *ProjectsHandler {
 	return &ProjectsHandler{
 		userSrvc:      userService,
 		heartbeatSrvc: heartbeatsService,
+		teamSrvc:      teamService,
 		config:        conf.Get(),
 	}
 }
@@ -51,7 +53,7 @@ func (h *ProjectsHandler) RegisterRoutes(router chi.Router) {
 // @Success 200 {object} v1.ProjectsViewModel
 // @Router /compat/wakatime/v1/users/{user}/projects [get]
 func (h *ProjectsHandler) Get(w http.ResponseWriter, r *http.Request) {
-	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current")
+	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current", h.teamSrvc)
 	if err != nil {
 		return // response was already sent by util function
 	}
@@ -79,7 +81,7 @@ func (h *ProjectsHandler) Get(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} v1.ProjectViewModel
 // @Router /compat/wakatime/v1/users/{user}/projects/{id} [get]
 func (h *ProjectsHandler) GetOne(w http.ResponseWriter, r *http.Request) {
-	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current")
+	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current", h.teamSrvc)
 	if err != nil {
 		return // response was already sent by util function
 	}

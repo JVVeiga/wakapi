@@ -246,15 +246,15 @@ func main() {
 	captchaHandler := api.NewCaptchaHandler()
 
 	// Compat Handlers
-	wakatimeV1StatusBarHandler := wtV1Routes.NewStatusBarHandler(userService, summaryService)
-	wakatimeV1AllHandler := wtV1Routes.NewAllTimeHandler(userService, summaryService)
-	wakatimeV1SummariesHandler := wtV1Routes.NewSummariesHandler(userService, summaryService)
-	wakatimeV1StatsHandler := wtV1Routes.NewStatsHandler(userService, summaryService)
-	wakatimeV1UsersHandler := wtV1Routes.NewUsersHandler(userService, heartbeatService)
-	wakatimeV1ProjectsHandler := wtV1Routes.NewProjectsHandler(userService, heartbeatService)
-	wakatimeV1HeartbeatsHandler := wtV1Routes.NewHeartbeatHandler(userService, heartbeatService)
+	wakatimeV1StatusBarHandler := wtV1Routes.NewStatusBarHandler(userService, summaryService, teamService)
+	wakatimeV1AllHandler := wtV1Routes.NewAllTimeHandler(userService, summaryService, teamService)
+	wakatimeV1SummariesHandler := wtV1Routes.NewSummariesHandler(userService, summaryService, teamService)
+	wakatimeV1StatsHandler := wtV1Routes.NewStatsHandler(userService, summaryService, teamService)
+	wakatimeV1UsersHandler := wtV1Routes.NewUsersHandler(userService, heartbeatService, teamService)
+	wakatimeV1ProjectsHandler := wtV1Routes.NewProjectsHandler(userService, heartbeatService, teamService)
+	wakatimeV1HeartbeatsHandler := wtV1Routes.NewHeartbeatHandler(userService, heartbeatService, teamService)
 	wakatimeV1LeadersHandler := wtV1Routes.NewLeadersHandler(userService, leaderboardService)
-	wakatimeV1UserAgentsHandler := wtV1Routes.NewUserAgentsHandler(userService, heartbeatService)
+	wakatimeV1UserAgentsHandler := wtV1Routes.NewUserAgentsHandler(userService, heartbeatService, teamService)
 	wakatimeV1MonitoredSitesHandler := wtV1Routes.NewMonitoredSitesHandler(userService, monitoredSiteService)
 	shieldV1BadgeHandler := shieldsV1Routes.NewBadgeHandler(summaryService, userService)
 

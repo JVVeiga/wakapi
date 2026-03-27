@@ -36,6 +36,17 @@ func (tm *TeamMember) IsValid() bool {
 		(tm.Role == TeamRoleOwner || tm.Role == TeamRoleCoOwner || tm.Role == TeamRoleMember)
 }
 
+// TeamPermissions represents all permissions a user has for a specific team
+type TeamPermissions struct {
+	IsOwner           bool // True if user is the team owner
+	IsCoOwner         bool // True if user is owner OR co-owner
+	IsMember          bool // True if user is any kind of member
+	CanRemove         bool // Can remove team members (owner only)
+	CanPromote        bool // Can promote/demote members (owner only)
+	CanManageInvites  bool // Can create and manage invites (owner or co-owner)
+	CanViewDashboards bool // Can view member dashboards (owner or co-owner)
+}
+
 func NewTeam(name, description, ownerID string) *Team {
 	return &Team{
 		ID:          uuid.Must(uuid.NewV4()).String(),

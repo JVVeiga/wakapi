@@ -23,12 +23,14 @@ type SummariesHandler struct {
 	config      *conf.Config
 	userSrvc    services.IUserService
 	summarySrvc services.ISummaryService
+	teamSrvc    services.ITeamService
 }
 
-func NewSummariesHandler(userService services.IUserService, summaryService services.ISummaryService) *SummariesHandler {
+func NewSummariesHandler(userService services.IUserService, summaryService services.ISummaryService, teamService services.ITeamService) *SummariesHandler {
 	return &SummariesHandler{
 		userSrvc:    userService,
 		summarySrvc: summaryService,
+		teamSrvc:    teamService,
 		config:      conf.Get(),
 	}
 }
@@ -64,7 +66,7 @@ func (h *SummariesHandler) RegisterRoutes(router chi.Router) {
 // @Success 200 {object} v1.SummariesViewModel
 // @Router /compat/wakatime/v1/users/{user}/summaries [get]
 func (h *SummariesHandler) Get(w http.ResponseWriter, r *http.Request) {
-	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current")
+	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current", h.teamSrvc)
 	if err != nil {
 		return // response was already sent by util function
 	}

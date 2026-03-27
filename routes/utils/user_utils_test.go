@@ -60,6 +60,65 @@ func TestCheckEffectiveUser_FallbackUnauthenticated(t *testing.T) {
 	userServiceMock.AssertNumberOfCalls(t, "GetUserById", 0)
 }
 
+func TestCheckEffectiveUser_TeamOwnerAccess(t *testing.T) {
+	// team owner requests data of a team member -> return team member
+	r, w, userServiceMock := mockUserAwareRequest("user2", "user1")
+	teamServiceMock := new(mocks.TeamServiceMock)
+	teamServiceMock.On("GetByUser", "user2").Return([]*models.Team{{ID: "team1"}}, nil)
+	teamServiceMock.On("IsTeamOwnerOrCoOwner", "team1", "user1").Return(true, nil)
+
+	user, err := CheckEffectiveUser(w, r, userServiceMock, "current", teamServiceMock)
+	assert.Nil(t, err)
+	assert.Equal(t, "user2", user.ID)
+	userServiceMock.AssertCalled(t, "GetUserById", "user2")
+}
+
+func TestCheckEffectiveUser_TeamCoOwnerAccess(t *testing.T) {
+	// team co-owner requests data of a team member -> return team member
+	r, w, userServiceMock := mockUserAwareRequest("user2", "user1")
+	teamServiceMock := new(mocks.TeamServiceMock)
+	teamServiceMock.On("GetByUser", "user2").Return([]*models.Team{{ID: "team1"}}, nil)
+	teamServiceMock.On("IsTeamOwnerOrCoOwner", "team1", "user1").Return(true, nil)
+
+	user, err := CheckEffectiveUser(w, r, userServiceMock, "current", teamServiceMock)
+	assert.Nil(t, err)
+	assert.Equal(t, "user2", user.ID)
+}
+
+func TestCheckEffectiveUser_TeamMemberNoAccess(t *testing.T) {
+	// regular team member requests data of another member -> error
+	r, w, userServiceMock := mockUserAwareRequest("user2", "user1")
+	teamServiceMock := new(mocks.TeamServiceMock)
+	teamServiceMock.On("GetByUser", "user2").Return([]*models.Team{{ID: "team1"}}, nil)
+	teamServiceMock.On("IsTeamOwnerOrCoOwner", "team1", "user1").Return(false, nil)
+
+	user, err := CheckEffectiveUser(w, r, userServiceMock, "current", teamServiceMock)
+	assert.NotNil(t, err)
+	assert.Nil(t, user)
+	userServiceMock.AssertNumberOfCalls(t, "GetUserById", 0)
+}
+
+func TestCheckEffectiveUser_NoTeamAccess(t *testing.T) {
+	// user not in any shared team -> error
+	r, w, userServiceMock := mockUserAwareRequest("user2", "user1")
+	teamServiceMock := new(mocks.TeamServiceMock)
+	teamServiceMock.On("GetByUser", "user2").Return([]*models.Team{}, nil)
+
+	user, err := CheckEffectiveUser(w, r, userServiceMock, "current", teamServiceMock)
+	assert.NotNil(t, err)
+	assert.Nil(t, user)
+	userServiceMock.AssertNumberOfCalls(t, "GetUserById", 0)
+}
+
+func TestCheckEffectiveUser_WithoutTeamService(t *testing.T) {
+	// calling without team service still works (backward compatible) -> error for non-admin
+	r, w, userServiceMock := mockUserAwareRequest("user2", "user1")
+	user, err := CheckEffectiveUser(w, r, userServiceMock, "current")
+	assert.NotNil(t, err)
+	assert.Nil(t, user)
+	userServiceMock.AssertNumberOfCalls(t, "GetUserById", 0)
+}
+
 func mockUserAwareRequest(requestedUser, authorizedUser string) (*http.Request, http.ResponseWriter, *mocks.UserServiceMock) {
 	testUser := models.User{
 		ID:      authorizedUser,

@@ -20,12 +20,14 @@ type AllTimeHandler struct {
 	config      *conf.Config
 	userSrvc    services.IUserService
 	summarySrvc services.ISummaryService
+	teamSrvc    services.ITeamService
 }
 
-func NewAllTimeHandler(userService services.IUserService, summaryService services.ISummaryService) *AllTimeHandler {
+func NewAllTimeHandler(userService services.IUserService, summaryService services.ISummaryService, teamService services.ITeamService) *AllTimeHandler {
 	return &AllTimeHandler{
 		userSrvc:    userService,
 		summarySrvc: summaryService,
+		teamSrvc:    teamService,
 		config:      conf.Get(),
 	}
 }
@@ -47,7 +49,7 @@ func (h *AllTimeHandler) RegisterRoutes(router chi.Router) {
 // @Success 200 {object} v1.AllTimeViewModel
 // @Router /compat/wakatime/v1/users/{user}/all_time_since_today [get]
 func (h *AllTimeHandler) Get(w http.ResponseWriter, r *http.Request) {
-	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current")
+	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current", h.teamSrvc)
 	if err != nil {
 		return // response was already sent by util function
 	}

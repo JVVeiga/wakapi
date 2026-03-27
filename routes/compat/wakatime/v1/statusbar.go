@@ -25,12 +25,14 @@ type StatusBarHandler struct {
 	config      *conf.Config
 	userSrvc    services.IUserService
 	summarySrvc services.ISummaryService
+	teamSrvc    services.ITeamService
 }
 
-func NewStatusBarHandler(userService services.IUserService, summaryService services.ISummaryService) *StatusBarHandler {
+func NewStatusBarHandler(userService services.IUserService, summaryService services.ISummaryService, teamService services.ITeamService) *StatusBarHandler {
 	return &StatusBarHandler{
 		userSrvc:    userService,
 		summarySrvc: summaryService,
+		teamSrvc:    teamService,
 		config:      conf.Get(),
 	}
 }
@@ -54,7 +56,7 @@ func (h *StatusBarHandler) RegisterRoutes(router chi.Router) {
 // @Success 200 {object} StatusBarViewModel
 // @Router /users/{user}/statusbar/today [get]
 func (h *StatusBarHandler) Get(w http.ResponseWriter, r *http.Request) {
-	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current")
+	user, err := routeutils.CheckEffectiveUser(w, r, h.userSrvc, "current", h.teamSrvc)
 	if err != nil {
 		return // response was already sent by util function
 	}

@@ -15,18 +15,6 @@ import (
 	"github.com/muety/wakapi/repositories"
 )
 
-// TeamPermissions represents all permissions a user has for a specific team
-// Computed in a single database query for optimal performance
-type TeamPermissions struct {
-	IsOwner           bool // True if user is the team owner
-	IsCoOwner         bool // True if user is owner OR co-owner
-	IsMember          bool // True if user is any kind of member
-	CanRemove         bool // Can remove team members (owner only)
-	CanPromote        bool // Can promote/demote members (owner only)
-	CanManageInvites  bool // Can create and manage invites (owner or co-owner)
-	CanViewDashboards bool // Can view member dashboards (owner or co-owner)
-}
-
 type TeamService struct {
 	config     *config.Config
 	cache      *cache.Cache
@@ -279,18 +267,18 @@ func (srv *TeamService) UpdateMemberRole(teamID, userID, newRole string) error {
 
 // GetUserPermissions returns all permissions for a user in a single query
 // This is more efficient than calling individual permission methods
-func (srv *TeamService) GetUserPermissions(teamID, userID string) (*TeamPermissions, error) {
+func (srv *TeamService) GetUserPermissions(teamID, userID string) (*models.TeamPermissions, error) {
 	// Check cache first
 	cacheKey := fmt.Sprintf("team_perms_%s_%s", teamID, userID)
 	if cached, found := srv.cache.Get(cacheKey); found {
-		return cached.(*TeamPermissions), nil
+		return cached.(*models.TeamPermissions), nil
 	}
 
 	// Single database query to get member info
 	member, err := srv.repository.GetMemberByTeamAndUser(teamID, userID)
 	if err != nil {
 		// Not a member - return empty permissions
-		empty := &TeamPermissions{}
+		empty := &models.TeamPermissions{}
 		srv.cache.Set(cacheKey, empty, cache.DefaultExpiration)
 		return empty, nil
 	}
@@ -300,7 +288,7 @@ func (srv *TeamService) GetUserPermissions(teamID, userID string) (*TeamPermissi
 	isCoOwner := member.Role == models.TeamRoleCoOwner
 	isOwnerOrCoOwner := isOwner || isCoOwner
 
-	perms := &TeamPermissions{
+	perms := &models.TeamPermissions{
 		IsOwner:           isOwner,
 		IsCoOwner:         isOwnerOrCoOwner,
 		IsMember:          true,

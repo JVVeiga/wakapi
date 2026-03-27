@@ -214,7 +214,7 @@ type ITeamService interface {
 	CanRemoveMembers(string, string) (bool, error)
 	CanPromoteMembers(string, string) (bool, error)
 	UpdateMemberRole(string, string, string) error
-	GetUserPermissions(string, string) (*TeamPermissions, error)
+	GetUserPermissions(string, string) (*models.TeamPermissions, error)
 }
 
 type IMonitoredSiteService interface {

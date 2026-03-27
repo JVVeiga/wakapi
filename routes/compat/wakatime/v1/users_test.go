@@ -60,7 +60,7 @@ func TestUsersHandler_Get(t *testing.T) {
 		Time:      models.CustomTime(time.Date(2022, 2, 2, 22, 22, 22, 6, time.UTC)),
 	}, nil)
 
-	usersHandler := NewUsersHandler(userServiceMock, heartbeatServiceMock)
+	usersHandler := NewUsersHandler(userServiceMock, heartbeatServiceMock, nil)
 	usersHandler.RegisterRoutes(apiRouter)
 
 	t.Run("when requesting own user data", func(t *testing.T) {
