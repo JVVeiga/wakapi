@@ -180,3 +180,58 @@ curl -s \
 3. Usuário autenticado é admin → acesso a qualquer usuário
 4. Usuário autenticado é owner/co-owner de um time que contém `{user}` → acesso permitido
 5. Caso contrário → 401 Unauthorized
+
+## MCP Server (Model Context Protocol)
+
+Servidor MCP para integração com IAs (Claude Desktop, etc.), permitindo que líderes de times analisem dados de coding dos seus liderados via conversação com IA.
+
+### Configuração
+
+```yaml
+mcp:
+  enabled: true       # desabilitado por default
+  path: /mcp          # path no servidor HTTP existente
+```
+
+Variáveis de ambiente: `WAKAPI_MCP_ENABLED`, `WAKAPI_MCP_PATH`
+
+### Endpoints
+
+| Método | Path | Descrição |
+|--------|------|-----------|
+| GET | `/api/mcp/sse` | Conexão SSE do MCP |
+| POST | `/api/mcp/message` | Mensagens MCP |
+
+### Autenticação
+
+Usa a mesma API key do WakaTime, via header `Authorization: Basic <base64(API_KEY)>`.
+
+**Configuração no Claude Desktop** (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "wakapi": {
+      "url": "https://host/api/mcp/sse",
+      "headers": {
+        "Authorization": "Basic <base64(API_KEY_DO_LIDER)>"
+      }
+    }
+  }
+}
+```
+
+### Tools Disponíveis
+
+| Tool | Descrição | Parâmetros Principais |
+|------|-----------|----------------------|
+| `list_teams` | Lista times que você lidera | — |
+| `get_member_summary` | Summary detalhado de um membro | `team_id`, `user_id`, `interval`/`from`/`to`, `project`, `language` |
+| `get_team_overview` | Visão agregada do time (ranking, top projetos/linguagens) | `team_id`, `interval`/`from`/`to` |
+| `compare_members` | Comparação lado a lado de membros | `team_id`, `user_ids[]`, `interval`/`from`/`to` |
+| `get_activity_patterns` | Distribuição horária e estatísticas de sessão | `team_id`, `user_id`, `interval`/`from`/`to` |
+| `get_project_analysis` | Quem trabalha em cada projeto | `team_id`, `project`, `interval`/`from`/`to` |
+| `get_trend_analysis` | Comparação entre períodos (tendências) | `team_id`, `user_id`, intervalos atual/anterior |
+
+### Autorização
+
+Apenas **owners e co-owners** de times podem usar as tools. Membros regulares não têm acesso aos dados de outros membros via MCP.
