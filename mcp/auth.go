@@ -20,9 +20,13 @@ func (s *MCPServer) extractHTTPAuthContext() func(ctx context.Context, r *http.R
 
 func (s *MCPServer) extractAuthContext() func(ctx context.Context, r *http.Request) context.Context {
 	return func(ctx context.Context, r *http.Request) context.Context {
+		// Try Authorization header first, then query param (same pattern as Wakapi API)
 		key, err := utils.ExtractBearerAuth(r)
 		if err != nil {
-			return ctx
+			key = r.URL.Query().Get("api_key")
+			if key == "" {
+				return ctx
+			}
 		}
 
 		user, err := s.userSrvc.GetUserByKey(key, false)
