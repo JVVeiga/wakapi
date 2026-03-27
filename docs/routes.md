@@ -195,12 +195,13 @@ mcp:
 
 Variáveis de ambiente: `WAKAPI_MCP_ENABLED`, `WAKAPI_MCP_PATH`
 
-### Endpoints
+### Endpoint
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/api/mcp/sse` | Conexão SSE do MCP |
-| POST | `/api/mcp/message` | Mensagens MCP |
+| POST | `/mcp` | Endpoint Streamable HTTP do MCP (JSON-RPC) |
+| GET | `/mcp` | SSE stream para notificações do servidor |
+| DELETE | `/mcp` | Encerrar sessão MCP |
 
 ### Autenticação
 
@@ -211,7 +212,7 @@ Usa a mesma API key do WakaTime, via header `Authorization: Basic <base64(API_KE
 {
   "mcpServers": {
     "wakapi": {
-      "url": "https://host/api/mcp/sse",
+      "url": "https://host/mcp",
       "headers": {
         "Authorization": "Basic <base64(API_KEY_DO_LIDER)>"
       }
