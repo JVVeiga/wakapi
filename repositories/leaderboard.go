@@ -136,7 +136,12 @@ func (r *LeaderboardRepository) TopKeysByUsersAndInterval(userIDs []string, key 
 		Where("\"interval\" IN ?", *key).
 		Where("\"by\" = ?", by).
 		Where("\"key\" IS NOT NULL").
-		Group("\"key\"").
+		// pass the bare column name so gorm applies the dialect's own quoting. Hand-quoting it as
+		// "key" makes gorm wrap the quotes as part of the identifier (`"key"` on mysql), which
+		// fails with: Unknown column '"key"' in 'group statement'. The raw Where/Select clauses
+		// above are passed through untouched, and mysql runs with sql_mode=ANSI_QUOTES, so the
+		// double quotes are only a problem where gorm quotes on our behalf.
+		Group("key").
 		Order("sum_total DESC").
 		Limit(limit).
 		Scan(&results).Error; err != nil {
