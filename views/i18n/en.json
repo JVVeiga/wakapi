@@ -681,6 +681,8 @@
   "flash.aliases_deleted": "Aliases deleted successfully",
   "flash.alias_added": "Alias added successfully",
   "flash.invalid_input": "Invalid input",
+  "flash.invalid_form": "Invalid form data",
+  "flash.invite_generate_failed": "Failed to generate invite code",
   "flash.invalid_input_project": "Invalid input for project: %s",
   "flash.label_added": "Label added to project successfully",
   "flash.label_deleted": "Label deleted successfully",
