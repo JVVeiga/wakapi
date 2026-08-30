@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
+	"gorm.io/gorm"
 	"strings"
 	"time"
 )
@@ -146,14 +147,18 @@ type TeamLeaderboardItem struct {
 	CreatedAt        CustomTime    `json:"created_at" swaggertype:"string" format:"date" example:"2006-01-02 15:04:05.000"`
 }
 
-func (t *TeamLeaderboardItem) AfterFind() error {
+// AfterFind and BeforeCreate must take a *gorm.DB to satisfy gorm's hook interfaces.
+// Without the parameter gorm logs "don't match AfterFindInterface" and silently skips them,
+// which leaves TopLanguages unpopulated on read and unserialized on write.
+
+func (t *TeamLeaderboardItem) AfterFind(tx *gorm.DB) error {
 	if t.TopLanguagesJSON != "" {
 		json.Unmarshal([]byte(t.TopLanguagesJSON), &t.TopLanguages)
 	}
 	return nil
 }
 
-func (t *TeamLeaderboardItem) BeforeCreate() error {
+func (t *TeamLeaderboardItem) BeforeCreate(tx *gorm.DB) error {
 	if len(t.TopLanguages) > 0 {
 		b, _ := json.Marshal(t.TopLanguages)
 		t.TopLanguagesJSON = string(b)
