@@ -51,7 +51,7 @@ func (s *MCPServer) aiProjectAnalysisTool() (mcpgo.Tool, mcpserver.ToolHandlerFu
 		// One durations query per member yields the full project × category matrix,
 		// which avoids the members × projects fan-out a summary-based approach would need.
 		perMember := make(map[string]map[string]AIStats, len(members))
-		anyInstrumented := false
+		var teamStats AIStats
 
 		for _, member := range members {
 			durations, err := s.fetchMemberDurations(member.UserID, from, to, &models.Filters{})
@@ -61,10 +61,7 @@ func (s *MCPServer) aiProjectAnalysisTool() (mcpgo.Tool, mcpserver.ToolHandlerFu
 			byProject := aiStatsByProject(durations)
 			perMember[member.UserID] = byProject
 			for _, st := range byProject {
-				if st.Instrumented {
-					anyInstrumented = true
-					break
-				}
+				teamStats = teamStats.add(st)
 			}
 		}
 
@@ -76,9 +73,15 @@ func (s *MCPServer) aiProjectAnalysisTool() (mcpgo.Tool, mcpserver.ToolHandlerFu
 			sb.WriteString(fmt.Sprintf("Uso de IA por projeto — %s (%s)\n\n", teamName, fmtDateRange(from, to)))
 		}
 
-		if !anyInstrumented {
-			sb.WriteString("Nenhuma atividade com categoria 'ai coding' registrada neste período.\n")
-			sb.WriteString("Ausência de telemetria de IA não é o mesmo que ausência de uso de IA — não leia como 0% de adoção.\n")
+		switch teamStats.State() {
+		case AIStateNoActivity:
+			sb.WriteString("Nenhuma atividade de coding registrada para este time no período.\n")
+			sb.WriteString("Não há o que medir: o time não codou, então não se trata de falta de telemetria de IA.\n")
+			return toolResult(sb.String()), nil
+		case AIStateNoTelemetry:
+			sb.WriteString(fmt.Sprintf("O time codou %s, mas nenhuma atividade com categoria 'ai coding' foi registrada.\n",
+				fmtDuration(teamStats.CodingTime)))
+			sb.WriteString("Pode ser ausência de telemetria, não necessariamente ausência de uso de IA — não leia como 0% de adoção.\n")
 			return toolResult(sb.String()), nil
 		}
 

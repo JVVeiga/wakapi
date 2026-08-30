@@ -140,3 +140,31 @@ func TestAIStatsByProject(t *testing.T) {
 func TestAIStatsByProject_Empty(t *testing.T) {
 	assert.Empty(t, aiStatsByProject(models.Durations{}))
 }
+
+func TestAIStats_State(t *testing.T) {
+	assert.Equal(t, AIStateInstrumented,
+		AIStats{AITime: time.Hour, CodingTime: 2 * time.Hour, Instrumented: true}.State())
+
+	assert.Equal(t, AIStateNoTelemetry,
+		AIStats{CodingTime: 2 * time.Hour}.State(),
+		"codou mas nunca reportou 'ai coding'")
+
+	assert.Equal(t, AIStateNoActivity,
+		AIStats{}.State(),
+		"não codou nada — não é o mesmo que telemetria faltando")
+}
+
+func TestAIStatsFromSummary_StateNoActivity(t *testing.T) {
+	// só categorias que ficam fora do denominador
+	stats := aiStatsFromSummary(categorySummary("browsing", 3600, "meeting", 1800))
+
+	assert.Equal(t, AIStateNoActivity, stats.State())
+	assert.Equal(t, time.Duration(0), stats.CodingTime)
+}
+
+func TestAIStatsFromSummary_StateNoTelemetry(t *testing.T) {
+	stats := aiStatsFromSummary(categorySummary("coding", 3600, "browsing", 600))
+
+	assert.Equal(t, AIStateNoTelemetry, stats.State())
+	assert.Equal(t, time.Hour, stats.CodingTime)
+}

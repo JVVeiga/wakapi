@@ -106,7 +106,7 @@ func TestAIAdoption_PartiallyInstrumented(t *testing.T) {
 	}))
 
 	text := extractText(result)
-	assert.Contains(t, text, "Sem telemetria de IA no período (1)")
+	assert.Contains(t, text, "Codaram sem nenhuma atividade de IA registrada (1)")
 	assert.Contains(t, text, "bob")
 	assert.Contains(t, text, "20.0%", "alice, instrumentada, mantém o percentual")
 
@@ -170,4 +170,61 @@ func TestAIAdoption_InvalidInterval(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, result.IsError)
+}
+
+func TestAIAdoption_SeparatesNoActivityFromNoTelemetry(t *testing.T) {
+	srv, userSrvc, teamSrvc, summarySrvc, _, _ := newMCPServerWithMocks()
+
+	teamSrvc.On("IsTeamOwnerOrCoOwner", "team1", "alice").Return(true, nil)
+	teamSrvc.On("GetMembers", "team1").Return([]*models.TeamMember{
+		{UserID: "alice"}, {UserID: "bob"}, {UserID: "carol"},
+	}, nil)
+	teamSrvc.On("GetByID", "team1").Return(&models.Team{ID: "team1", Name: "Backend"}, nil)
+
+	for _, u := range []string{"alice", "bob", "carol"} {
+		userSrvc.On("GetUserById", u).Return(&models.User{ID: u}, nil)
+	}
+
+	summaries := map[string]*models.Summary{
+		"alice": categorySummary("coding", 3600, "ai coding", 3600), // instrumentada
+		"bob":   categorySummary("coding", 7200),                    // codou, sem IA
+		"carol": categorySummary("browsing", 1800),                  // não codou nada
+	}
+	for id, sum := range summaries {
+		id, sum := id, sum
+		summarySrvc.On("Aliased", mock.Anything, mock.Anything,
+			mock.MatchedBy(func(u *models.User) bool { return u.ID == id }),
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(sum, nil)
+	}
+
+	_, handler := srv.aiAdoptionTool()
+	result, _ := handler(ctxWithUser(&models.User{ID: "alice"}), makeRequest(map[string]any{
+		"team_id": "team1",
+		"compare": false,
+	}))
+
+	text := extractText(result)
+
+	// bob coded without AI; carol did not code at all. Reporting both as "missing
+	// telemetry" would send a lead chasing a plugin problem carol does not have.
+	assert.Contains(t, text, "Codaram sem nenhuma atividade de IA registrada (1): bob")
+	assert.Contains(t, text, "Sem atividade de coding no período (1): carol")
+}
+
+func TestAIAdoption_TeamWithNoActivityAtAll(t *testing.T) {
+	srv := aiAdoptionMocks(t,
+		categorySummary("browsing", 3600),
+		categorySummary("meeting", 1800),
+	)
+
+	_, handler := srv.aiAdoptionTool()
+	result, _ := handler(ctxWithUser(&models.User{ID: "alice"}), makeRequest(map[string]any{
+		"team_id": "team1",
+	}))
+
+	text := extractText(result)
+	assert.Contains(t, text, "Nenhuma atividade de coding registrada")
+	assert.NotContains(t, text, "mas nenhuma atividade com categoria",
+		"time que não codou não recebe o texto de telemetria ausente")
+	assert.NotContains(t, text, "Membro |", "sem atividade não há tabela a montar")
 }

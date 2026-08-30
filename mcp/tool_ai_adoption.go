@@ -52,9 +52,15 @@ func (s *MCPServer) aiAdoptionTool() (mcpgo.Tool, mcpserver.ToolHandlerFunc) {
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("Adoção de IA — %s (%s)\n\n", teamName, fmtDateRange(from, to)))
 
-		if !teamStats.Instrumented {
-			sb.WriteString("Nenhuma atividade com categoria 'ai coding' registrada neste período.\n")
-			sb.WriteString("Isso significa ausência de telemetria de IA, e não necessariamente ausência de uso de IA:\n")
+		switch teamStats.State() {
+		case AIStateNoActivity:
+			sb.WriteString("Nenhuma atividade de coding registrada para este time no período.\n")
+			sb.WriteString("Não há o que medir: o time não codou, então não se trata de falta de telemetria de IA.\n")
+			return toolResult(sb.String()), nil
+		case AIStateNoTelemetry:
+			sb.WriteString(fmt.Sprintf("O time codou %s, mas nenhuma atividade com categoria 'ai coding' foi registrada.\n",
+				fmtDuration(teamStats.CodingTime)))
+			sb.WriteString("Isso pode ser ausência de telemetria de IA, e não necessariamente ausência de uso de IA:\n")
 			sb.WriteString("os plugins do time podem não estar reportando a categoria. Não interprete como 0% de adoção.\n")
 			return toolResult(sb.String()), nil
 		}
@@ -136,10 +142,18 @@ func (s *MCPServer) aiAdoptionTool() (mcpgo.Tool, mcpserver.ToolHandlerFunc) {
 
 		sb.WriteString(fmtTable(headers, rows))
 
-		if uninstrumented := uninstrumentedMembers(members, current); len(uninstrumented) > 0 {
-			sb.WriteString(fmt.Sprintf("\nSem telemetria de IA no período (%d): %s\n",
-				len(uninstrumented), strings.Join(uninstrumented, ", ")))
-			sb.WriteString("Aparecem como \"--\" na tabela: o dado pode simplesmente não estar sendo reportado pelo plugin.\n")
+		noTelemetry, noActivity := membersWithoutRatio(members, current)
+
+		if len(noTelemetry) > 0 {
+			sb.WriteString(fmt.Sprintf("\nCodaram sem nenhuma atividade de IA registrada (%d): %s\n",
+				len(noTelemetry), strings.Join(noTelemetry, ", ")))
+			sb.WriteString("Aparecem como \"--\": ou não usaram IA, ou o plugin não reporta a categoria.\n")
+		}
+
+		if len(noActivity) > 0 {
+			sb.WriteString(fmt.Sprintf("\nSem atividade de coding no período (%d): %s\n",
+				len(noActivity), strings.Join(noActivity, ", ")))
+			sb.WriteString("Não codaram, então não há ratio a apurar — isso não é falta de telemetria.\n")
 		}
 
 		return toolResult(sb.String()), nil
@@ -148,14 +162,23 @@ func (s *MCPServer) aiAdoptionTool() (mcpgo.Tool, mcpserver.ToolHandlerFunc) {
 	return tool, handler
 }
 
-// uninstrumentedMembers lists members with no AI-coding activity recorded at all,
-// preserving the team's member order.
-func uninstrumentedMembers(members []*models.TeamMember, stats map[string]AIStats) []string {
-	out := make([]string, 0)
+// membersWithoutRatio splits the members that have no AI ratio into the two reasons
+// why, preserving the team's member order. Reporting both under one heading would
+// tell a team lead that someone's tooling is misconfigured when they simply took
+// the period off.
+func membersWithoutRatio(members []*models.TeamMember, stats map[string]AIStats) (noTelemetry, noActivity []string) {
+	noTelemetry, noActivity = []string{}, []string{}
 	for _, member := range members {
-		if st, ok := stats[member.UserID]; ok && !st.Instrumented {
-			out = append(out, member.UserID)
+		st, ok := stats[member.UserID]
+		if !ok {
+			continue
+		}
+		switch st.State() {
+		case AIStateNoTelemetry:
+			noTelemetry = append(noTelemetry, member.UserID)
+		case AIStateNoActivity:
+			noActivity = append(noActivity, member.UserID)
 		}
 	}
-	return out
+	return noTelemetry, noActivity
 }

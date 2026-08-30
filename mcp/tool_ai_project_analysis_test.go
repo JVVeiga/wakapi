@@ -142,7 +142,7 @@ func TestAIProjectAnalysis_NotInstrumented(t *testing.T) {
 	assert.False(t, result.IsError)
 
 	text := extractText(result)
-	assert.Contains(t, text, "Ausência de telemetria")
+	assert.Contains(t, text, "nenhuma atividade com categoria 'ai coding' foi registrada")
 	assert.NotContains(t, text, "0.0%")
 }
 
@@ -182,4 +182,21 @@ func TestLookupProject_CaseInsensitive(t *testing.T) {
 
 	_, ok = lookupProject(byProject, "outro")
 	assert.False(t, ok)
+}
+
+func TestAIProjectAnalysis_TeamWithNoActivityAtAll(t *testing.T) {
+	srv := aiProjectMocks(t,
+		models.Durations{{Project: "wakapi", Category: "browsing", Duration: time.Hour}},
+		models.Durations{},
+	)
+
+	_, handler := srv.aiProjectAnalysisTool()
+	result, _ := handler(ctxWithUser(&models.User{ID: "alice"}), makeRequest(map[string]any{
+		"team_id": "team1",
+	}))
+
+	text := extractText(result)
+	assert.Contains(t, text, "Nenhuma atividade de coding registrada")
+	assert.NotContains(t, text, "mas nenhuma atividade com categoria",
+		"time que não codou não recebe o texto de telemetria ausente")
 }

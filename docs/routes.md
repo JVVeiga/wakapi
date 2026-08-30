@@ -255,9 +255,22 @@ falta telemetria em vez de reportar `0.0%` — um plugin que não envia a catego
 o mesmo número que um time que não usa IA, e a IA cliente não teria como distinguir os dois
 casos. Isso vale em dois níveis:
 
-- **Time/projeto inteiro sem telemetria** → a tool devolve só o aviso, sem tabela.
-- **Membro ou projeto isolado sem telemetria** → a linha mostra `--` nas colunas de IA
-  (nunca `0.0%`), e o `get_ai_adoption` ainda lista esses membros à parte no rodapé.
+- **Time/projeto inteiro** → a tool devolve só o aviso, sem tabela.
+- **Membro ou projeto isolado** → a linha mostra `--` nas colunas de IA, nunca `0.0%`.
+
+Um ratio ausente tem **duas causas diferentes**, e o `get_ai_adoption` as reporta em
+seções separadas no rodapé:
+
+| Estado | Significado | Como aparece |
+|---|---|---|
+| `AIStateInstrumented` | há atividade `ai coding` — o ratio vale | percentual normal |
+| `AIStateNoTelemetry` | codou, mas nunca reportou `ai coding` | "Codaram sem nenhuma atividade de IA registrada" |
+| `AIStateNoActivity` | não codou nada no período | "Sem atividade de coding no período" |
+
+A distinção importa na prática: juntar as duas faz um líder ir atrás de um problema de
+plugin em alguém que apenas tirou férias. Em produção, dos 10 membros sem ratio num
+levantamento de 30 dias, 9 simplesmente não tinham codado e só 1 era caso real de
+categoria ausente.
 
 Os campos `ai_model`, `ai_input_tokens`, `ai_output_tokens`, `ai_line_changes`,
 `ai_session` e `ai_prompt_length` existem no modelo `Heartbeat` (e `ai_model` também em
