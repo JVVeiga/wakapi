@@ -232,6 +232,37 @@ Usa a mesma API key do WakaTime, via header `Authorization: Basic <base64(API_KE
 | `get_activity_patterns` | Distribuição horária e estatísticas de sessão | `team_id`, `user_id`, `interval`/`from`/`to` |
 | `get_project_analysis` | Quem trabalha em cada projeto | `team_id`, `project`, `interval`/`from`/`to` |
 | `get_trend_analysis` | Comparação entre períodos (tendências) | `team_id`, `user_id`, intervalos atual/anterior |
+| `get_ai_adoption` | Adoção de IA no time: ratio por membro + variação vs período anterior | `team_id`, `compare`, `interval`/`from`/`to` |
+| `get_ai_project_analysis` | Percentual de coding assistido por IA por projeto | `team_id`, `project`, `interval`/`from`/`to` |
+
+### Análise de IA
+
+As tools de IA derivam suas métricas da **categoria** do heartbeat, do mesmo modo que o
+indicador "AI Coding Ratio" da tela de summary:
+
+```
+ratio = tempo("ai coding") / (tempo("ai coding") + tempo("coding"))
+```
+
+`get_ai_adoption` usa summaries persistidos (uma consulta por membro).
+`get_ai_project_analysis` usa durations (também uma consulta por membro), porque a duration
+carrega projeto e categoria no mesmo registro — isso evita o fan-out de
+`membros × projetos` que uma abordagem por summary exigiria.
+
+**Ausência de dado ≠ 0% de adoção.** As tools rastreiam se houve *qualquer* atividade
+com categoria `ai coding` no período. Quando não houve, respondem explicitamente que
+falta telemetria em vez de reportar `0.0%` — um plugin que não envia a categoria produziria
+o mesmo número que um time que não usa IA, e a IA cliente não teria como distinguir os dois
+casos. Isso vale em dois níveis:
+
+- **Time/projeto inteiro sem telemetria** → a tool devolve só o aviso, sem tabela.
+- **Membro ou projeto isolado sem telemetria** → a linha mostra `--` nas colunas de IA
+  (nunca `0.0%`), e o `get_ai_adoption` ainda lista esses membros à parte no rodapé.
+
+Os campos `ai_model`, `ai_input_tokens`, `ai_output_tokens`, `ai_line_changes`,
+`ai_session` e `ai_prompt_length` existem no modelo `Heartbeat` (e `ai_model` também em
+`Duration`), mas **ainda não são expostos por nenhuma tool** — `SummaryAiModel` não faz parte
+de `SummaryTypes()`, logo nunca é agregado em um summary.
 
 ### Autorização
 

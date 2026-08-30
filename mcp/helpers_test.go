@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -200,4 +201,16 @@ func TestLimitMembers(t *testing.T) {
 
 	small := []*models.TeamMember{{UserID: "a"}, {UserID: "b"}}
 	assert.Equal(t, 2, len(limitMembers(small)))
+}
+
+// lineStartingWith returns the first line of s starting with prefix, or "" if none does.
+// Table rows start with the first column's value, which distinguishes them from prose
+// lines that merely mention the same name.
+func lineStartingWith(s, prefix string) string {
+	for _, line := range strings.Split(s, "\n") {
+		if strings.HasPrefix(line, prefix) {
+			return line
+		}
+	}
+	return ""
 }

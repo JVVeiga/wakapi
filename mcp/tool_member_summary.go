@@ -52,7 +52,15 @@ func (s *MCPServer) memberSummaryTool() (mcpgo.Tool, mcpserver.ToolHandlerFunc) 
 
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("Summary de %s (%s)\n", userID, fmtDateRange(from, to)))
-		sb.WriteString(fmt.Sprintf("Tempo total: %s\n\n", fmtDuration(total)))
+		sb.WriteString(fmt.Sprintf("Tempo total: %s\n", fmtDuration(total)))
+
+		// Only printed when AI telemetry is actually present — a missing line means
+		// "no AI data reported", which is not the same claim as "0% AI".
+		if aiStats := aiStatsFromSummary(summary); aiStats.Instrumented {
+			sb.WriteString(fmt.Sprintf("Coding com IA: %s de %s (%s)\n",
+				fmtDuration(aiStats.AITime), fmtDuration(aiStats.CodingTime), fmtRatio(aiStats.Ratio)))
+		}
+		sb.WriteString("\n")
 
 		if len(summary.Projects) > 0 {
 			sb.WriteString("Projetos:\n")

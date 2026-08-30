@@ -46,6 +46,7 @@ func (s *MCPServer) teamOverviewTool() (mcpgo.Tool, mcpserver.ToolHandlerFunc) {
 		type memberTotal struct {
 			UserID string
 			Total  time.Duration
+			AI     AIStats
 		}
 
 		members = limitMembers(members)
@@ -60,7 +61,7 @@ func (s *MCPServer) teamOverviewTool() (mcpgo.Tool, mcpserver.ToolHandlerFunc) {
 			}
 			total := summary.TotalTime()
 			memberSummaries = append(memberSummaries, summary)
-			memberTotals = append(memberTotals, memberTotal{UserID: member.UserID, Total: total})
+			memberTotals = append(memberTotals, memberTotal{UserID: member.UserID, Total: total, AI: aiStatsFromSummary(summary)})
 			if total > 0 {
 				activeCount++
 			}
@@ -82,9 +83,21 @@ func (s *MCPServer) teamOverviewTool() (mcpgo.Tool, mcpserver.ToolHandlerFunc) {
 		sb.WriteString(fmt.Sprintf("Time: %s (%s)\n", teamName, fmtDateRange(from, to)))
 		sb.WriteString(fmt.Sprintf("Tempo total do time: %s | Membros ativos: %d/%d\n\n", fmtDuration(totalTime), activeCount, len(members)))
 
+		teamAI := aiStatsFromSummary(aggregated)
+		if teamAI.Instrumented {
+			sb.WriteString(fmt.Sprintf("Coding com IA: %s de %s (%s)\n\n",
+				fmtDuration(teamAI.AITime), fmtDuration(teamAI.CodingTime), fmtRatio(teamAI.Ratio)))
+		}
+
 		sb.WriteString("Ranking:\n")
 		for i, mt := range memberTotals {
-			sb.WriteString(fmt.Sprintf("  %d. %-20s %s\n", i+1, mt.UserID, fmtDuration(mt.Total)))
+			// The AI column is appended only for members with AI telemetry, so an
+			// absent column reads as "no data" rather than as 0%.
+			aiSuffix := ""
+			if mt.AI.Instrumented {
+				aiSuffix = fmt.Sprintf("   IA %s", fmtRatio(mt.AI.Ratio))
+			}
+			sb.WriteString(fmt.Sprintf("  %d. %-20s %s%s\n", i+1, mt.UserID, fmtDuration(mt.Total), aiSuffix))
 		}
 		sb.WriteString("\n")
 

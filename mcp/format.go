@@ -5,6 +5,7 @@ import (
 	"math"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/muety/wakapi/models"
 )
@@ -25,6 +26,26 @@ func fmtPercent(part, total time.Duration) string {
 		return "0.0%"
 	}
 	return fmt.Sprintf("%.1f%%", float64(part)/float64(total)*100)
+}
+
+// fmtRatio renders a 0..1 ratio as a percentage string.
+func fmtRatio(ratio float64) string {
+	return fmt.Sprintf("%.1f%%", ratio*100)
+}
+
+// fmtRatioBar renders a 0..1 ratio as a filled bar of the given width.
+func fmtRatioBar(ratio float64, width int) string {
+	if ratio < 0 {
+		ratio = 0
+	}
+	if ratio > 1 {
+		ratio = 1
+	}
+	filled := int(ratio * float64(width))
+	if filled > width {
+		filled = width
+	}
+	return strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
 }
 
 func fmtDateRange(from, to time.Time) string {
@@ -55,14 +76,17 @@ func fmtTopItems(items []*models.SummaryItem, limit int) string {
 }
 
 func fmtTable(headers []string, rows [][]string) string {
+	// Widths are measured in runes, not bytes: fmt's "%-*s" pads by rune count, so
+	// measuring with len() over-pads any non-ASCII cell (ratio bars, accented project
+	// names) by the difference and breaks the column alignment.
 	widths := make([]int, len(headers))
 	for i, h := range headers {
-		widths[i] = len(h)
+		widths[i] = utf8.RuneCountInString(h)
 	}
 	for _, row := range rows {
 		for i, cell := range row {
-			if i < len(widths) && len(cell) > widths[i] {
-				widths[i] = len(cell)
+			if w := utf8.RuneCountInString(cell); i < len(widths) && w > widths[i] {
+				widths[i] = w
 			}
 		}
 	}

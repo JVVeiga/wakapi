@@ -71,6 +71,8 @@ func (s *MCPServer) registerTools() {
 	s.mcpSrv.AddTool(s.activityPatternsTool())
 	s.mcpSrv.AddTool(s.projectAnalysisTool())
 	s.mcpSrv.AddTool(s.trendAnalysisTool())
+	s.mcpSrv.AddTool(s.aiAdoptionTool())
+	s.mcpSrv.AddTool(s.aiProjectAnalysisTool())
 }
 
 func toolError(msg string) *mcpgo.CallToolResult {
