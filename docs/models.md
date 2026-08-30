@@ -57,8 +57,20 @@ Evento individual de atividade do editor de código.
 - `Time` (CustomTime) — timestamp do evento
 - `Hash` (string, unique) — deduplicação
 - `UserAgent` (string) — client info
+- `AIModel` (string) — modelo de IA que gerou a alteração (indexado; ignorado no hash porque
+  o WakaTime pode parsear diferente). O harness do agente é parseado como `Editor`.
+- `AILineChanges`, `HumanLineChanges` (int) — linhas alteradas por IA vs por humano
+- `AISession` (string), `AIInputTokens`, `AIOutputTokens`, `AIPromptLength` (int) — telemetria
+  adicional de heartbeats de IA
+- `Lines`, `LineNo`, `CursorPos`, `LineAdditions`, `LineDeletions`, `ProjectRootCount` (int)
 
-**Índices:** time, time+user, user+project, project, branch, language, editor, os, machine
+> **SQLite:** desde o upstream 2.17.x a coluna `time` é armazenada como INTEGER
+> (epoch em milissegundos), não mais TEXT, e a coluna gerada `time_real` foi removida.
+
+O dashboard deriva o **AI coding ratio** da categoria `ai coding` sobre `coding`
+(tile `summary.ai_coding_ratio`), que substituiu o antigo tile "Top OS".
+
+**Índices:** time, time+user, user+project, project, branch, language, editor, os, machine, ai_model
 
 ### Duration (`models/duration.go`)
 

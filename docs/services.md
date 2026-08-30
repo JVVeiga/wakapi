@@ -69,6 +69,14 @@ Todas as interfaces estão definidas em `services/services.go`. A implementaçã
 - Merge: server config + user config (user tem prioridade)
 - Cache: 24h por usuário
 
+### ProjectService (`services/project.go`)
+- **Dependências:** HeartbeatRepository, AliasService, ProjectLabelService
+- **Responsabilidades:** Estatísticas de projeto (primeiro/último heartbeat, total, contagem)
+  computadas programaticamente a partir dos heartbeats, em vez de uma query SQL agregada
+- **Cache:** 1h por usuário; invalidado no CRUD de aliases
+- **Métodos-chave:** GetUserProjectStats
+- Injetado no `ProjectsHandler` da camada de compatibilidade WakaTime v1 e na página de projetos
+
 ### ProjectLabelService (`services/project_label.go`)
 - Agrupa projetos por labels
 - Cache: 24h, invalidado por eventos

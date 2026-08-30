@@ -98,7 +98,6 @@ wakapi/
 │   ├── imprint.go               # Página de impressum
 │   ├── setup.go                 # Onboarding
 │   ├── misc.go                  # Unsubscribe
-│   ├── relay/relay.go           # Proxy relay para outras instâncias
 │   ├── api/                     # Endpoints REST
 │   │   ├── heartbeat.go         # POST /api/heartbeat(s)
 │   │   ├── summary.go           # GET /api/summary

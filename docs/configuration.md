@@ -22,6 +22,8 @@ O Wakapi lê configuração de `config.yml` (padrão) ou do path especificado vi
 | `listen_ipv4` | string | 127.0.0.1 | — |
 | `listen_ipv6` | string | ::1 | — |
 | `listen_socket` | string | — | — |
+| `listen_socket_mode` | uint32 | 0666 | WAKAPI_LISTEN_SOCKET_MODE |
+| `log_format` | string | text | WAKAPI_LOG_FORMAT |
 | `port` | int | 3000 | — |
 | `base_path` | string | / | — |
 | `public_url` | string | http://localhost:3000 | — |
@@ -41,6 +43,7 @@ O Wakapi lê configuração de `config.yml` (padrão) ou do path especificado vi
 | `data_cleanup_time` | string | 0 0 6 * * 0 | WAKAPI_DATA_CLEANUP_TIME |
 | `import_enabled` | bool | true | WAKAPI_IMPORT_ENABLED |
 | `import_batch_size` | int | 50 | WAKAPI_IMPORT_BATCH_SIZE |
+| `import_hosts_whitelist` | []string | [] | WAKAPI_IMPORT_HOSTS_WHITELIST |
 | `heartbeat_max_age` | string | 168h | WAKAPI_HEARTBEAT_MAX_AGE |
 | `data_retention_months` | int | -1 | WAKAPI_DATA_RETENTION_MONTHS |
 | `max_inactive_months` | int | -1 | WAKAPI_MAX_INACTIVE_MONTHS |
@@ -65,7 +68,7 @@ O Wakapi lê configuração de `config.yml` (padrão) ou do path especificado vi
 | `ssl` | bool | false | — |
 | `charset` | string | utf8mb4 | — |
 
-**Dialetos suportados:** `sqlite3`, `postgres`, `mysql`, `mssql`
+**Dialetos suportados:** `sqlite3`, `postgres`, `mysql` (o suporte a `mssql` foi removido pelo upstream)
 
 **Connection strings por dialeto:**
 - **SQLite:** `file.db?busy_timeout=10000&journal_mode=wal`
@@ -77,10 +80,12 @@ O Wakapi lê configuração de `config.yml` (padrão) ou do path especificado vi
 | Campo | Tipo | Default | Env Var |
 |-------|------|---------|---------|
 | `password_salt` | string | — | WAKAPI_PASSWORD_SALT |
+| `cookie_key` | string | — | WAKAPI_COOKIE_KEY |
 | `insecure_cookies` | bool | false | WAKAPI_INSECURE_COOKIES |
 | `cookie_max_age` | int | 172800 | WAKAPI_COOKIE_MAX_AGE |
 | `allow_signup` | bool | true | WAKAPI_ALLOW_SIGNUP |
 | `oidc_allow_signup` | bool | true | WAKAPI_OIDC_ALLOW_SIGNUP |
+| `oidc_insecure` | bool | false | WAKAPI_OIDC_INSECURE |
 | `disable_local_auth` | bool | false | WAKAPI_DISABLE_LOCAL_AUTH |
 | `signup_captcha` | bool | false | WAKAPI_SIGNUP_CAPTCHA |
 | `invite_codes` | bool | true | WAKAPI_INVITE_CODES |
@@ -103,6 +108,17 @@ security:
       client_secret: xxx
       endpoint: https://github.com
 ```
+
+**`cookie_key`** — chave base64 a partir da qual são derivadas as chaves de sessão e de
+autenticação (introduzida no upstream 2.17.x). Se ficar vazia, uma chave aleatória é gerada a
+cada boot e **todas as sessões existentes são invalidadas no restart**. Defina-a em produção:
+
+```bash
+openssl rand -base64 64
+```
+
+**`oidc_insecure`** — pula a validação do certificado TLS do provedor OIDC. Só para
+ambientes de desenvolvimento com certificado autoassinado.
 
 ### Mail (`mail`)
 
