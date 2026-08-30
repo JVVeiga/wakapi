@@ -28,6 +28,26 @@ func fmtPercent(part, total time.Duration) string {
 	return fmt.Sprintf("%.1f%%", float64(part)/float64(total)*100)
 }
 
+// fmtRatio renders a 0..1 ratio as a percentage string.
+func fmtRatio(ratio float64) string {
+	return fmt.Sprintf("%.1f%%", ratio*100)
+}
+
+// fmtRatioBar renders a 0..1 ratio as a filled bar of the given width.
+func fmtRatioBar(ratio float64, width int) string {
+	if ratio < 0 {
+		ratio = 0
+	}
+	if ratio > 1 {
+		ratio = 1
+	}
+	filled := int(ratio * float64(width))
+	if filled > width {
+		filled = width
+	}
+	return strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
+}
+
 func fmtDateRange(from, to time.Time) string {
 	return fmt.Sprintf("%s a %s", from.Format("02/01/2006"), to.Format("02/01/2006"))
 }
@@ -57,8 +77,8 @@ func fmtTopItems(items []*models.SummaryItem, limit int) string {
 
 func fmtTable(headers []string, rows [][]string) string {
 	// Widths are measured in runes, not bytes: fmt's "%-*s" pads by rune count, so
-	// measuring with len() over-pads any non-ASCII cell (accented project names,
-	// box-drawing characters) by the difference and breaks the column alignment.
+	// measuring with len() over-pads any non-ASCII cell (ratio bars, accented project
+	// names) by the difference and breaks the column alignment.
 	widths := make([]int, len(headers))
 	for i, h := range headers {
 		widths[i] = utf8.RuneCountInString(h)

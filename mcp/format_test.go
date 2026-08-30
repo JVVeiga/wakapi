@@ -115,9 +115,25 @@ func TestMaxItem(t *testing.T) {
 	assert.Nil(t, maxItem([]*models.SummaryItem{}))
 }
 
+func TestFmtRatio(t *testing.T) {
+	assert.Equal(t, "0.0%", fmtRatio(0))
+	assert.Equal(t, "23.4%", fmtRatio(0.234))
+	assert.Equal(t, "100.0%", fmtRatio(1))
+	assert.Equal(t, "5.0%", fmtRatio(0.05))
+}
+
+func TestFmtRatioBar(t *testing.T) {
+	assert.Equal(t, "░░░░░░░░░░", fmtRatioBar(0, 10))
+	assert.Equal(t, "█████░░░░░", fmtRatioBar(0.5, 10))
+	assert.Equal(t, "██████████", fmtRatioBar(1, 10))
+	// out-of-range input is clamped rather than producing a negative repeat count
+	assert.Equal(t, "██████████", fmtRatioBar(1.5, 10))
+	assert.Equal(t, "░░░░░░░░░░", fmtRatioBar(-0.5, 10))
+}
+
 func TestFmtTable_AlignsMultiByteCells(t *testing.T) {
-	// accented names and box-drawing characters are multi-byte; widths must be counted
-	// in runes, otherwise fmt's rune-based padding over-pads by the byte/rune difference
+	// bars and accented names are multi-byte; widths must be counted in runes,
+	// otherwise fmt's rune-based padding over-pads by the byte/rune difference
 	out := fmtTable(
 		[]string{"Projeto", "Barra"},
 		[][]string{
