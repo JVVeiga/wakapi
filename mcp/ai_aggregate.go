@@ -25,6 +25,35 @@ type AIStats struct {
 	Instrumented bool
 }
 
+// AIDataState explains why an entity has no AI ratio to report.
+type AIDataState int
+
+const (
+	// AIStateNoActivity: the entity logged no coding time at all in the window.
+	// Nothing can be said about its AI usage because it did not code.
+	AIStateNoActivity AIDataState = iota
+	// AIStateNoTelemetry: the entity coded, but never reported an "ai coding"
+	// category. Either it genuinely used no AI, or its plugin does not report the
+	// category — from the data alone the two are indistinguishable.
+	AIStateNoTelemetry
+	// AIStateInstrumented: AI-coding activity exists, so the ratio is meaningful.
+	AIStateInstrumented
+)
+
+// State classifies the stats so callers phrase an absent ratio correctly.
+// Someone who took the month off and someone whose editor never reports the
+// category both produce a zero ratio, but they are not the same finding.
+func (a AIStats) State() AIDataState {
+	switch {
+	case a.Instrumented:
+		return AIStateInstrumented
+	case a.CodingTime > 0:
+		return AIStateNoTelemetry
+	default:
+		return AIStateNoActivity
+	}
+}
+
 // aiStatsFromSummary derives AI usage from a summary's category items, mirroring the
 // ratio shown in the web UI: CategoryRatio("ai coding", "ai coding", "coding").
 // Summary item totals are stored in seconds, hence the conversion.
