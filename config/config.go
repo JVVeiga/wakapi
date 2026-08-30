@@ -611,7 +611,9 @@ func Load(configFlag string, version string) *Config {
 
 	config.Version = strings.TrimSpace(version)
 	tagVersionMatch, _ := regexp.MatchString(`\d+\.\d+\.\d+`, config.Version)
-	if tagVersionMatch {
+	// upstream tags releases without a leading "v" (2.17.6) and adds one here; this fork tags them
+	// with it (v1.4.0), which would otherwise render as "vv1.4.0"
+	if tagVersionMatch && !strings.HasPrefix(config.Version, "v") {
 		config.Version = "v" + config.Version
 	}
 
