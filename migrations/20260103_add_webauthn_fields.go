@@ -1,7 +1,8 @@
 package migrations
 
 import (
-	"github.com/gofrs/uuid/v5"
+	"uuid"
+
 	"github.com/muety/wakapi/config"
 	"github.com/muety/wakapi/models"
 	"gorm.io/gorm"
@@ -16,6 +17,9 @@ func init() {
 			if hasRun(name, db) {
 				return nil
 			}
+			if !db.Migrator().HasColumn(&models.User{}, "webauthn_id") {
+				return nil
+			}
 
 			var users []*models.User
 			if err := db.Where("webauthn_id IS NULL OR webauthn_id = ''").Find(&users).Error; err != nil {
@@ -23,7 +27,7 @@ func init() {
 			}
 
 			for _, u := range users {
-				u.WebauthnID = uuid.Must(uuid.NewV4()).String()
+				u.WebauthnID = uuid.NewV4().String()
 				if err := db.Model(u).Update("webauthn_id", u.WebauthnID).Error; err != nil {
 					return err
 				}

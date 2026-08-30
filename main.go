@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/duke-git/lancet/v2/condition"
+	"github.com/duke-git/lancet/v2/slice"
 	_ "github.com/glebarez/sqlite"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -22,7 +23,6 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 	_ "gorm.io/driver/mysql"
 	_ "gorm.io/driver/postgres"
-	_ "gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
@@ -35,7 +35,6 @@ import (
 	shieldsV1Routes "github.com/muety/wakapi/routes/compat/shields/v1"
 	wtV1Routes "github.com/muety/wakapi/routes/compat/wakatime/v1"
 	wakaMcp "github.com/muety/wakapi/mcp"
-	"github.com/muety/wakapi/routes/relay"
 	"github.com/muety/wakapi/services"
 	"github.com/muety/wakapi/services/mail"
 	"github.com/muety/wakapi/static/docs"
@@ -82,6 +81,7 @@ var (
 	userService            services.IUserService
 	languageMappingService services.ILanguageMappingService
 	projectLabelService    services.IProjectLabelService
+	projectService         services.IProjectService
 	durationService        services.IDurationService
 	summaryService         services.ISummaryService
 	leaderboardService     services.ILeaderboardService
@@ -207,13 +207,14 @@ func main() {
 	languageMappingService = services.NewLanguageMappingService(languageMappingRepository)
 	projectLabelService = services.NewProjectLabelService(projectLabelRepository)
 	heartbeatService = services.NewHeartbeatService(heartbeatRepository, languageMappingService)
+	projectService = services.NewProjectService(aliasService, heartbeatRepository, heartbeatService)
 	durationService = services.NewDurationService(durationRepository, heartbeatService, userService, languageMappingService)
 	summaryService = services.NewSummaryService(summaryRepository, heartbeatService, durationService, aliasService, projectLabelService)
 	aggregationService = services.NewAggregationService(userService, summaryService, heartbeatService, durationService)
 	reportService = services.NewReportService(summaryService, userService, mailService)
 	activityService = services.NewActivityService(summaryService)
 	diagnosticsService = services.NewDiagnosticsService(diagnosticsRepository)
-	housekeepingService = services.NewHousekeepingService(userService, heartbeatService, summaryService, aliasRepository) // can pass any repo here
+	housekeepingService = services.NewHousekeepingService(userService, heartbeatService, projectService, summaryService, aliasRepository) // can pass any repo here
 	miscService = services.NewMiscService(userService, heartbeatService, summaryService, keyValueService, mailService)
 	webAuthnService = services.NewWebAuthnService(webAuthnRepository)
 
@@ -252,7 +253,7 @@ func main() {
 	wakatimeV1SummariesHandler := wtV1Routes.NewSummariesHandler(userService, summaryService, teamService)
 	wakatimeV1StatsHandler := wtV1Routes.NewStatsHandler(userService, summaryService, teamService)
 	wakatimeV1UsersHandler := wtV1Routes.NewUsersHandler(userService, heartbeatService, teamService)
-	wakatimeV1ProjectsHandler := wtV1Routes.NewProjectsHandler(userService, heartbeatService, teamService)
+	wakatimeV1ProjectsHandler := wtV1Routes.NewProjectsHandler(userService, heartbeatService, teamService, projectService)
 	wakatimeV1HeartbeatsHandler := wtV1Routes.NewHeartbeatHandler(userService, heartbeatService, teamService)
 	wakatimeV1LeadersHandler := wtV1Routes.NewLeadersHandler(userService, leaderboardService)
 	wakatimeV1UserAgentsHandler := wtV1Routes.NewUserAgentsHandler(userService, heartbeatService, teamService)
@@ -263,7 +264,7 @@ func main() {
 	summaryHandler := routes.NewSummaryHandler(summaryService, userService, heartbeatService, durationService, aliasService)
 	settingsHandler := routes.NewSettingsHandler(userService, heartbeatService, durationService, summaryService, aliasService, aggregationService, languageMappingService, projectLabelService, keyValueService, mailService, apiKeyService, webAuthnService)
 	subscriptionHandler := routes.NewSubscriptionHandler(userService, mailService, keyValueService)
-	projectsHandler := routes.NewProjectsHandler(userService, heartbeatService)
+	projectsHandler := routes.NewProjectsHandler(userService, heartbeatService, projectService)
 	homeHandler := routes.NewHomeHandler(userService, keyValueService)
 	loginHandler := routes.NewLoginHandler(userService, mailService, keyValueService, webAuthnService)
 	imprintHandler := routes.NewImprintHandler(keyValueService)
@@ -274,11 +275,19 @@ func main() {
 	miscHandler := routes.NewMiscHandler(userService)
 	langHandler := routes.NewLanguageHandler(userService)
 
-	// Other Handlers
-	relayHandler := relay.NewRelayHandler()
-
 	// Setup Routing
 	router := chi.NewRouter()
+
+	trustedProxies := config.Security.TrustReverseProxyIPs()
+	if len(trustedProxies) > 0 {
+		cidrs := slice.Map[net.IPNet, string](trustedProxies, func(_ int, ipNet net.IPNet) string {
+			return ipNet.String()
+		})
+		router.Use(middleware.ClientIPFromXFF(cidrs...))
+	} else {
+		router.Use(middleware.ClientIPFromRemoteAddr)
+	}
+
 	router.Use(
 		middleware.CleanPath,
 		middleware.StripSlashes,
@@ -317,7 +326,6 @@ func main() {
 	projectsHandler.RegisterRoutes(rootRouter)
 	settingsHandler.RegisterRoutes(rootRouter)
 	subscriptionHandler.RegisterRoutes(rootRouter)
-	relayHandler.RegisterRoutes(rootRouter)
 	miscHandler.RegisterRoutes(rootRouter)
 	adminHandler.RegisterRoutes(rootRouter)
 	teamsHandler.RegisterRoutes(rootRouter)

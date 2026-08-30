@@ -35,6 +35,10 @@ type IAliasService interface {
 	GetAliasOrDefault(string, uint8, string) (string, error)
 }
 
+type IProjectService interface {
+	GetUserProjectStats(*models.User, time.Time, time.Time, string, *utils.PageParams, bool) ([]*models.ProjectStats, error)
+}
+
 type IHeartbeatService interface {
 	Insert(*models.Heartbeat) error
 	InsertBatch([]*models.Heartbeat) error
@@ -53,11 +57,11 @@ type IHeartbeatService interface {
 	GetLatestByFilters(*models.User, *models.Filters) (*models.Heartbeat, error)
 	GetEntitySetByUser(uint8, string) ([]string, error)
 	StreamAllWithin(time.Time, time.Time, *models.User) (chan *models.Heartbeat, error)
+	StreamAllWithinRaw(time.Time, time.Time, *models.User) (chan *models.Heartbeat, error)
 	StreamAllWithinByFilters(time.Time, time.Time, *models.User, *models.Filters) (chan *models.Heartbeat, error)
 	DeleteBefore(time.Time) error
 	DeleteByUser(*models.User) error
 	DeleteByUserBefore(*models.User, time.Time) error
-	GetUserProjectStats(*models.User, time.Time, time.Time, string, *utils.PageParams, bool) ([]*models.ProjectStats, error)
 	GetUserAgentsByUser(*models.User) ([]*models.UserAgent, error)
 }
 
@@ -114,8 +118,10 @@ type ISummaryService interface {
 	Retrieve(time.Time, time.Time, *models.User, *models.Filters, *time.Duration) (*models.Summary, error)
 	Summarize(time.Time, time.Time, *models.User, *models.Filters, *time.Duration) (*models.Summary, error)
 	GetLatestByUser() ([]*models.TimeByUser, error)
+	GetLatestBySingleUser(string) (time.Time, error)
 	DeleteByUser(string) error
 	DeleteByUserBefore(string, time.Time) error
+	DeleteByUserAfter(string, time.Time) error
 	Insert(*models.Summary) error
 	MergeSummariesAcrossUsers([]*models.Summary) (*models.Summary, error)
 }

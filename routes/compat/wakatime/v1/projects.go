@@ -19,17 +19,19 @@ import (
 )
 
 type ProjectsHandler struct {
-	config        *conf.Config
 	userSrvc      services.IUserService
 	heartbeatSrvc services.IHeartbeatService
 	teamSrvc      services.ITeamService
+	projectSrvc   services.IProjectService
+	config        *conf.Config
 }
 
-func NewProjectsHandler(userService services.IUserService, heartbeatsService services.IHeartbeatService, teamService services.ITeamService) *ProjectsHandler {
+func NewProjectsHandler(userService services.IUserService, heartbeatsService services.IHeartbeatService, teamService services.ITeamService, projectService services.IProjectService) *ProjectsHandler {
 	return &ProjectsHandler{
 		userSrvc:      userService,
 		heartbeatSrvc: heartbeatsService,
 		teamSrvc:      teamService,
+		projectSrvc:   projectService,
 		config:        conf.Get(),
 	}
 }
@@ -105,7 +107,7 @@ func (h *ProjectsHandler) GetOne(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProjectsHandler) loadProjects(user *models.User, q string, exact bool) ([]*v1.Project, error) {
-	results, err := h.heartbeatSrvc.GetUserProjectStats(user, time.Time{}, utils.BeginOfToday(time.Local), "", nil, false)
+	results, err := h.projectSrvc.GetUserProjectStats(user, time.Time{}, utils.BeginOfToday(time.Local), "", nil, false)
 	if err != nil {
 		return nil, err
 	}

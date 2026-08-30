@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,13 +12,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duke-git/lancet/v2/slice"
 	"github.com/duke-git/lancet/v2/strutil"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/securecookie"
 	"github.com/muety/wakapi/config"
 	"github.com/muety/wakapi/mocks"
 	"github.com/muety/wakapi/models"
 	routeutils "github.com/muety/wakapi/routes/utils"
 	"github.com/muety/wakapi/utils"
+	testutils "github.com/muety/wakapi/utils/test"
 	"github.com/muety/wakapi/views/i18n"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/stretchr/testify/assert"
@@ -92,15 +97,17 @@ func (suite *LoginHandlerTestSuite) BeforeTest(suiteName, testName string) {
 	suite.UserService = new(mocks.UserServiceMock)
 	suite.KeyValueService = new(mocks.KeyValueServiceMock)
 	suite.WebAuthnService = new(mocks.WebAuthnServiceMock)
+	suite.UserService.On("Count").Return(1, nil).Maybe()
 
 	cfg := config.Empty()
 	cfg.App.DefaultLanguage = "en"
-	cfg.Security.SecureCookie = securecookie.New(
-		securecookie.GenerateRandomKey(64),
-		securecookie.GenerateRandomKey(32),
-	)
+	cfg.Security.CookieKeyBytes = securecookie.GenerateRandomKey(128)
 	cfg.Security.PasswordSalt = testPasswordSalt
+	cfg.Security.LoginMaxRate = "100/1m"
+	cfg.Security.SignupMaxRate = "100/1m"
+	cfg.Security.PasswordResetMaxRate = "100/1m"
 	config.Set(cfg)
+	config.InitializeCookies()
 	suite.Cfg = cfg
 
 	i18n.Init(i18n.TranslationFiles, "en")
@@ -238,7 +245,7 @@ func (suite *LoginHandlerTestSuite) TestPostLogin_EmptyLoginForm() {
 	suite.UserService.AssertExpectations(suite.T())
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 	assert.Contains(suite.T(), string(body), "Missing parameters")
-	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
+	suite.assertCookieAbsent(w, config.CookieKeyAuth, config.CookieKeyOidcIdToken, config.CookieKeyOidcRefreshToken, config.CookieKeyOidcProvider)
 }
 
 func (suite *LoginHandlerTestSuite) TestPostLogin_NonExistingUser() {
@@ -259,7 +266,7 @@ func (suite *LoginHandlerTestSuite) TestPostLogin_NonExistingUser() {
 	suite.UserService.AssertExpectations(suite.T())
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 	assert.Contains(suite.T(), string(body), "Resource not found")
-	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
+	suite.assertCookieAbsent(w, config.CookieKeyAuth, config.CookieKeyOidcIdToken, config.CookieKeyOidcRefreshToken, config.CookieKeyOidcProvider)
 }
 
 func (suite *LoginHandlerTestSuite) TestPostLogin_WrongPassword() {
@@ -279,7 +286,7 @@ func (suite *LoginHandlerTestSuite) TestPostLogin_WrongPassword() {
 	suite.UserService.AssertExpectations(suite.T())
 	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
 	assert.Contains(suite.T(), string(body), "Invalid credentials")
-	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
+	suite.assertCookieAbsent(w, config.CookieKeyAuth, config.CookieKeyOidcIdToken, config.CookieKeyOidcRefreshToken, config.CookieKeyOidcProvider)
 }
 
 func (suite *LoginHandlerTestSuite) TestPostLogin_LocalAuthenticationDisabled_NonExistingUser() {
@@ -299,7 +306,7 @@ func (suite *LoginHandlerTestSuite) TestPostLogin_LocalAuthenticationDisabled_No
 	suite.UserService.AssertExpectations(suite.T())
 	assert.Equal(suite.T(), http.StatusForbidden, w.Code)
 	assert.Contains(suite.T(), string(body), "Local authentication is disabled on this server")
-	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
+	suite.assertCookieAbsent(w, config.CookieKeyAuth, config.CookieKeyOidcIdToken, config.CookieKeyOidcRefreshToken, config.CookieKeyOidcProvider)
 }
 
 func (suite *LoginHandlerTestSuite) TestPostSignup_Success() {
@@ -313,7 +320,7 @@ func (suite *LoginHandlerTestSuite) TestPostSignup_Success() {
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 
-	suite.UserService.On("Count", mock.Anything).Return(1, nil)
+	suite.UserService.On("Count").Return(1, nil)
 	suite.UserService.On("CreateOrGet", mock.Anything, mock.Anything).Return(&models.User{}, true, nil)
 	suite.Cfg.Security.AllowSignup = true
 	suite.Cfg.Security.OidcAllowSignup = false
@@ -330,6 +337,30 @@ func (suite *LoginHandlerTestSuite) TestPostSignup_Success() {
 	assert.Equal(suite.T(), testUserNewPassword, argSignup.Password)
 	assert.False(suite.T(), argIsAdmin)
 	assert.Equal(suite.T(), "/", w.Header().Get("Location"))
+}
+
+func (suite *LoginHandlerTestSuite) TestPostSignup_Success_FirstUserIsAdmin() {
+	form := url.Values{}
+	form.Add("username", testUserNewId)
+	form.Add("email", testUserNewEmail)
+	form.Add("password", testUserNewPassword)
+	form.Add("password_repeat", testUserNewPassword)
+
+	r := httptest.NewRequest(http.MethodPost, "/signup", strings.NewReader(form.Encode()))
+	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	suite.UserService.On("Count").Unset()
+	suite.UserService.On("Count").Return(0, nil)
+	suite.UserService.On("CreateOrGet", mock.Anything, mock.Anything).Return(&models.User{}, true, nil)
+	suite.Cfg.Security.AllowSignup = true
+	suite.Cfg.Security.OidcAllowSignup = false
+
+	suite.Sut.PostSignup(w, r)
+
+	suite.UserService.AssertExpectations(suite.T())
+	assert.Equal(suite.T(), http.StatusFound, w.Code)
+	assert.True(suite.T(), suite.UserService.Calls[1].Arguments[1].(bool))
 }
 
 func (suite *LoginHandlerTestSuite) TestPostSignup_InvalidForm() {
@@ -362,7 +393,7 @@ func (suite *LoginHandlerTestSuite) TestPostSignup_ExistingUser() {
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 
-	suite.UserService.On("Count", mock.Anything).Return(1, nil)
+	suite.UserService.On("Count").Return(1, nil)
 	suite.UserService.On("CreateOrGet", mock.Anything, mock.Anything).Return(suite.TestUser, false, nil)
 	suite.Cfg.Security.AllowSignup = true
 	suite.Cfg.Security.OidcAllowSignup = false
@@ -455,7 +486,16 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_Success() {
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
 	assert.Empty(suite.T(), suite.getSessionError(r))
 	assert.Equal(suite.T(), "/summary", w.Header().Get("Location"))
-	assert.Contains(suite.T(), w.Header().Get("Set-Cookie"), "wakapi_auth=")
+
+	testutils.AssertContainsHeaderMatching(suite.T(), w.Header(), "Set-Cookie", func(value string) bool {
+		return strings.Contains(value, "oidc_id_token=")
+	}, "OIDC id_token cookie not set in response")
+	testutils.AssertContainsHeaderMatching(suite.T(), w.Header(), "Set-Cookie", func(value string) bool {
+		return strings.Contains(value, "oidc_provider="+testProvider)
+	}, "OIDC provider cookie not set in response")
+	testutils.AssertContainsHeaderMatching(suite.T(), w.Header(), "Set-Cookie", func(value string) bool {
+		return strings.Contains(value, "oidc_refresh_token=")
+	}, "OIDC refresh token not set in response")
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_Success_CreateUser() {
@@ -488,7 +528,16 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_Success_CreateUser(
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
 	assert.Empty(suite.T(), suite.getSessionError(r))
 	assert.Equal(suite.T(), "/summary", w.Header().Get("Location"))
-	assert.Contains(suite.T(), w.Header().Get("Set-Cookie"), "wakapi_auth=")
+
+	testutils.AssertContainsHeaderMatching(suite.T(), w.Header(), "Set-Cookie", func(value string) bool {
+		return strings.Contains(value, "oidc_id_token=")
+	}, "OIDC id_token cookie not set in response")
+	testutils.AssertContainsHeaderMatching(suite.T(), w.Header(), "Set-Cookie", func(value string) bool {
+		return strings.Contains(value, "oidc_provider="+testProvider)
+	}, "OIDC provider cookie not set in response")
+	testutils.AssertContainsHeaderMatching(suite.T(), w.Header(), "Set-Cookie", func(value string) bool {
+		return strings.Contains(value, "oidc_refresh_token=")
+	}, "OIDC refresh token not set in response")
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_Success_CreateUser_CustomUsernameClaim() {
@@ -537,7 +586,16 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_Success_CreateUser_
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
 	assert.Empty(suite.T(), suite.getSessionError(r))
 	assert.Equal(suite.T(), "/summary", w.Header().Get("Location"))
-	assert.Contains(suite.T(), w.Header().Get("Set-Cookie"), "wakapi_auth=")
+
+	testutils.AssertContainsHeaderMatching(suite.T(), w.Header(), "Set-Cookie", func(value string) bool {
+		return strings.Contains(value, "oidc_id_token=")
+	}, "OIDC id_token cookie not set in response")
+	testutils.AssertContainsHeaderMatching(suite.T(), w.Header(), "Set-Cookie", func(value string) bool {
+		return strings.Contains(value, "oidc_provider=custom-claim-provider")
+	}, "OIDC provider cookie not set in response")
+	testutils.AssertContainsHeaderMatching(suite.T(), w.Header(), "Set-Cookie", func(value string) bool {
+		return strings.Contains(value, "oidc_refresh_token=")
+	}, "OIDC refresh token not set in response")
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLogin_CustomScopesRequested() {
@@ -582,7 +640,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_SignupDisabled() {
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
 	assert.Equal(suite.T(), "Registration is disabled on this server", suite.getSessionError(r))
 	assert.Equal(suite.T(), "/login", w.Header().Get("Location"))
-	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
+	suite.assertCookieAbsent(w, config.CookieKeyAuth, config.CookieKeyOidcIdToken, config.CookieKeyOidcRefreshToken, config.CookieKeyOidcProvider)
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_InvalidState() {
@@ -598,7 +656,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_InvalidState() {
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
 	assert.Equal(suite.T(), "Suspicious operation, got invalid state in OIDC callback", suite.getSessionError(r))
 	assert.Equal(suite.T(), "/login", w.Header().Get("Location"))
-	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
+	suite.assertCookieAbsent(w, config.CookieKeyAuth, config.CookieKeyOidcIdToken, config.CookieKeyOidcRefreshToken, config.CookieKeyOidcProvider)
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_AuthExchangeFailure() {
@@ -618,7 +676,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_AuthExchangeFailure
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
 	assert.Equal(suite.T(), "Failed to exchange authorization code for access token", suite.getSessionError(r))
 	assert.Equal(suite.T(), "/login", w.Header().Get("Location"))
-	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
+	suite.assertCookieAbsent(w, config.CookieKeyAuth, config.CookieKeyOidcIdToken, config.CookieKeyOidcRefreshToken, config.CookieKeyOidcProvider)
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_IdTokenExpired() {
@@ -636,7 +694,7 @@ func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_IdTokenExpired() {
 	assert.Equal(suite.T(), http.StatusFound, w.Code)
 	assert.Equal(suite.T(), "Failed to verify and decode id_token", suite.getSessionError(r))
 	assert.Equal(suite.T(), "/login", w.Header().Get("Location"))
-	assert.Empty(suite.T(), w.Header().Get("Set-Cookie"))
+	suite.assertCookieAbsent(w, config.CookieKeyAuth, config.CookieKeyOidcIdToken, config.CookieKeyOidcRefreshToken, config.CookieKeyOidcProvider)
 }
 
 func (suite *LoginHandlerTestSuite) TestGetOidcLoginCallback_NoMatchingProvider() {
@@ -686,6 +744,123 @@ func (suite *LoginHandlerTestSuite) authorizeUser(user mockoidc.User, provider s
 func (suite *LoginHandlerTestSuite) resetOidcMockTtl() {
 	suite.OidcMock.AccessTTL = 600 * time.Second
 	suite.OidcMock.RefreshTTL = 60 * time.Minute
+}
+
+func (suite *LoginHandlerTestSuite) assertCookieAbsent(w *httptest.ResponseRecorder, keys ...string) {
+	cookies := w.Result().Cookies()
+	if len(keys) == 0 {
+		assert.Empty(suite.T(), cookies)
+		return
+	}
+	for _, c := range cookies {
+		for _, k := range keys {
+			if c.Name == k {
+				suite.FailNowf("cookie set", "Expected cookie %q to be absent, but got: %s", k, c.Raw)
+			}
+		}
+	}
+}
+
+func (suite *LoginHandlerTestSuite) TestPostLogin_RateLimiting() {
+	suite.Cfg.Security.LoginMaxRate = "2/1m"
+	suite.Cfg.Security.ParseTrustReverseProxyIPs()
+
+	router := chi.NewRouter()
+	router.Use(middleware.ClientIPFromRemoteAddr)
+	suite.Sut.RegisterRoutes(router)
+
+	form := url.Values{}
+	form.Add("username", testUserExistingId)
+	form.Add("password", testUserExistingPassword)
+
+	suite.UserService.On("GetUserById", testUserExistingId).Return(suite.TestUser, nil)
+	suite.UserService.On("Update", mock.Anything).Return(suite.TestUser, nil)
+
+	// First request - 302 Found
+	req1 := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
+	req1.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	w1 := httptest.NewRecorder()
+	router.ServeHTTP(w1, req1)
+	assert.Equal(suite.T(), http.StatusFound, w1.Code)
+
+	// Second request - 302 Found
+	req2 := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
+	req2.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	w2 := httptest.NewRecorder()
+	router.ServeHTTP(w2, req2)
+	assert.Equal(suite.T(), http.StatusFound, w2.Code)
+
+	// Third request - 429 Too Many Requests
+	req3 := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
+	req3.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	w3 := httptest.NewRecorder()
+	router.ServeHTTP(w3, req3)
+	assert.Equal(suite.T(), http.StatusTooManyRequests, w3.Code)
+}
+
+func (suite *LoginHandlerTestSuite) TestPostLogin_RateLimiting_TrustReverseProxy() {
+	suite.Cfg.Security.TrustReverseProxyIps = "192.168.0.0/24"
+	suite.Cfg.Security.LoginMaxRate = "1/1m"
+	suite.Cfg.Security.SignupMaxRate = "100/1m"
+	suite.Cfg.Security.PasswordResetMaxRate = "100/1m"
+	suite.Cfg.Security.ParseTrustReverseProxyIPs()
+
+	router := chi.NewRouter() // analogously to main.go
+	trustedProxies := suite.Cfg.Security.TrustReverseProxyIPs()
+	if len(trustedProxies) > 0 {
+		cidrs := slice.Map[net.IPNet, string](trustedProxies, func(_ int, ipNet net.IPNet) string {
+			return ipNet.String()
+		})
+		router.Use(middleware.ClientIPFromXFF(cidrs...))
+	} else {
+		router.Use(middleware.ClientIPFromRemoteAddr)
+	}
+	suite.Sut.RegisterRoutes(router)
+
+	form := url.Values{}
+	form.Add("username", testUserExistingId)
+	form.Add("password", testUserExistingPassword)
+
+	suite.UserService.On("GetUserById", testUserExistingId).Return(suite.TestUser, nil)
+	suite.UserService.On("Update", mock.Anything).Return(suite.TestUser, nil)
+
+	// Scenario: spoofing attempt through trusted proxy
+	// Request from trusted proxy (192.168.0.10), representing client (1.1.1.1) who tries to spoof 2.2.2.2.
+	reqA1 := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
+	reqA1.RemoteAddr = "192.168.0.10:12345"
+	reqA1.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	reqA1.Header.Add("X-Forwarded-For", "2.2.2.2, 1.1.1.1") // Left is spoofed, right is appended by trusted proxy
+	wA1 := httptest.NewRecorder()
+	router.ServeHTTP(wA1, reqA1)
+	assert.Equal(suite.T(), http.StatusFound, wA1.Code)
+
+	// Subsequent request from trusted proxy representing same client (1.1.1.1) trying to spoof different IP (3.3.3.3).
+	reqA2 := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
+	reqA2.RemoteAddr = "192.168.0.10:12345"
+	reqA2.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	reqA2.Header.Add("X-Forwarded-For", "3.3.3.3, 1.1.1.1")
+	wA2 := httptest.NewRecorder()
+	router.ServeHTTP(wA2, reqA2)
+	assert.Equal(suite.T(), http.StatusTooManyRequests, wA2.Code)
+
+	// Scenario: Legitimate proxy requests from trusted proxy
+	// Trusted proxy forwards request from client (5.5.5.5). Should map to 5.5.5.5. (Status 302)
+	reqB1 := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
+	reqB1.RemoteAddr = "192.168.0.10:12345"
+	reqB1.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	reqB1.Header.Add("X-Forwarded-For", "5.5.5.5")
+	wB1 := httptest.NewRecorder()
+	router.ServeHTTP(wB1, reqB1)
+	assert.Equal(suite.T(), http.StatusFound, wB1.Code)
+
+	// Trusted proxy forwards request from client (6.6.6.6). Should map to 6.6.6.6. (Status 302)
+	reqB2 := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
+	reqB2.RemoteAddr = "192.168.0.10:12345"
+	reqB2.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	reqB2.Header.Add("X-Forwarded-For", "6.6.6.6")
+	wB2 := httptest.NewRecorder()
+	router.ServeHTTP(wB2, reqB2)
+	assert.Equal(suite.T(), http.StatusFound, wB2.Code)
 }
 
 // TODO: test all remaining endpoints

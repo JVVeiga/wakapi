@@ -6,12 +6,11 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"uuid"
 
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/gofrs/uuid/v5"
 
 	conf "github.com/muety/wakapi/config"
-	"github.com/muety/wakapi/helpers"
 	"github.com/muety/wakapi/models"
 	routeutils "github.com/muety/wakapi/routes/utils"
 	"github.com/muety/wakapi/services"
@@ -81,13 +80,10 @@ func (m *AuthenticateMiddleware) Handler(h http.Handler) http.Handler {
 func (m *AuthenticateMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	var user *models.User
 
-	if m.tryHandleOidc(w, r) {
-		// user has expired oidc token, thus is redirected to provider and will come back to callback endpoint
-		// notably, if user does have a valid, non-expired id token, they will also have a valid auth cookie, so proceed as usual
-		return
-	}
-
 	user, err := m.tryGetUserByCookie(r)
+	if err != nil {
+		user, err = m.tryGetUserByOidc(w, r)
+	}
 	if err != nil {
 		user, err = m.tryGetUserByApiKeyHeader(r)
 	}
@@ -114,6 +110,9 @@ func (m *AuthenticateMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Reques
 				session.Save(r, w)
 			}
 			http.SetCookie(w, m.config.GetClearCookie(models.AuthCookieKey))
+			http.SetCookie(w, m.config.GetClearCookie(models.OidcProviderCookieKey))
+			http.SetCookie(w, m.config.GetClearCookie(models.OidcIdTokenCookieKey))
+			http.SetCookie(w, m.config.GetClearCookie(models.OidcRefreshTokenCookieKey))
 			http.Redirect(w, r, m.redirectTarget, http.StatusFound)
 		}
 		return
@@ -194,7 +193,7 @@ func (m *AuthenticateMiddleware) tryGetUserByTrustedHeader(r *http.Request, crea
 	// register new user solely based on upstream provided username (see https://github.com/muety/wakapi/issues/808)
 	signup := &models.Signup{
 		Username: remoteUser,
-		Password: uuid.Must(uuid.NewV4()).String(), // throwaway random string as password
+		Password: uuid.NewV4().String(), // throwaway random string as password
 	}
 
 	conf.Log().Request(r).Warn("registering new remotely authenticated user based on trusted header auth", "user_id", remoteUser)
@@ -205,7 +204,7 @@ func (m *AuthenticateMiddleware) tryGetUserByTrustedHeader(r *http.Request, crea
 }
 
 func (m *AuthenticateMiddleware) tryGetUserByCookie(r *http.Request) (*models.User, error) {
-	username, err := helpers.ExtractCookieAuth(r, m.config)
+	username, err := routeutils.ExtractCookieAuth(r)
 	if err != nil {
 		return nil, err
 	}
@@ -221,30 +220,15 @@ func (m *AuthenticateMiddleware) tryGetUserByCookie(r *http.Request) (*models.Us
 	return user, nil
 }
 
-// redirect if oidc id token was found, but expired
-// returns true if further authentication can be skipped
-func (m *AuthenticateMiddleware) tryHandleOidc(w http.ResponseWriter, r *http.Request) bool {
-	idToken := routeutils.GetOidcIdTokenPayload(r)
-	if idToken == nil {
-		return false
+func (m *AuthenticateMiddleware) tryGetUserByOidc(w http.ResponseWriter, r *http.Request) (*models.User, error) {
+	idTokenPayload, err := routeutils.ExtractOidcAuth(w, r)
+	if err != nil {
+		return nil, err
+	}
+	user, err := m.userSrvc.GetUserByOidc(idTokenPayload.ProviderName, idTokenPayload.Subject)
+	if err != nil {
+		return nil, err
 	}
 
-	if !idToken.IsValid() { // expired
-		provider, err := m.config.Security.GetOidcProvider(idToken.ProviderName)
-		if err != nil {
-			conf.Log().Request(r).Error("failed to get provider from id token", "provider", idToken.ProviderName, "sub", idToken.Subject)
-			return false
-		}
-
-		if _, err := m.userSrvc.GetUserByOidc(provider.Name, idToken.Subject); err != nil {
-			conf.Log().Request(r).Error("got expired oidc token for non-oidc user", "provider", idToken.ProviderName, "sub", idToken.Subject)
-			return false
-		}
-
-		state := routeutils.SetNewOidcState(r, w)
-		http.Redirect(w, r, provider.OAuth2.AuthCodeURL(state), http.StatusFound)
-		return true
-	}
-
-	return false
+	return user, nil
 }

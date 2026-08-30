@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/descope/virtualwebauthn"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-webauthn/webauthn/webauthn"
-	"github.com/gofrs/uuid/v5"
 	"github.com/gorilla/securecookie"
 	"github.com/muety/wakapi/config"
 	"github.com/muety/wakapi/middlewares"
@@ -97,6 +97,7 @@ func (suite *WebAuthnTestSuite) mockSettingsViewDefaults() {
 	suite.HeartbeatService.On("GetFirstByUser", mock.Anything).Return(time.Time{}, nil).Maybe()
 	suite.ApiKeyService.On("GetByUser", mock.Anything).Return([]*models.ApiKey{}, nil).Maybe()
 	suite.WebauthnService.On("LoadCredentialIntoUser", mock.Anything).Return(nil).Maybe()
+	suite.UserService.On("Count").Return(1, nil).Maybe()
 }
 
 func (suite *WebAuthnTestSuite) loginAsUser(user *models.User) []*http.Cookie {
@@ -524,11 +525,11 @@ func mergeCookies(base []*http.Cookie, updates []*http.Cookie) []*http.Cookie {
 }
 
 func createUser() *models.User {
-	userID := uuid.Must(uuid.NewV4()).String()
+	userID := uuid.NewV4().String()
 	passwdHash, _ := utils.HashPassword(userID+"_password", testPasswordSalt)
 	return &models.User{
 		ID:          userID,
-		WebauthnID:  uuid.Must(uuid.NewV4()).String(),
+		WebauthnID:  uuid.NewV4().String(),
 		AuthType:    "local",
 		Password:    passwdHash,
 		Credentials: []*models.WebAuthnCredential{},
@@ -556,11 +557,7 @@ func (suite *WebAuthnTestSuite) getLoginCookies(userID, password string) []*http
 func createAndLoadConfig() {
 	cfg := config.Empty()
 	cfg.Security.PasswordSalt = testPasswordSalt
-	hashKey := securecookie.GenerateRandomKey(64)
-	blockKey := securecookie.GenerateRandomKey(32)
-	sessionKey := securecookie.GenerateRandomKey(32)
-	cfg.Security.SecureCookie = securecookie.New(hashKey, blockKey)
-	cfg.Security.SessionKey = sessionKey
+	cfg.Security.CookieKeyBytes = securecookie.GenerateRandomKey(128)
 	cfg.Security.CookieMaxAgeSec = 120
 	cfg.Security.PasswordResetMaxRate = "0/1m"
 	cfg.Security.LoginMaxRate = "1000/1m"
@@ -568,5 +565,5 @@ func createAndLoadConfig() {
 	cfg.Server.PublicUrl = "https://example.com"
 	config.Set(cfg)
 	config.InitWebAuthn(cfg)
-	config.ResetSessionStore()
+	config.InitializeCookies()
 }

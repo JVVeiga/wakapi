@@ -209,6 +209,7 @@
                     </button>
                 </div>
             </form>
+            {{ end }}
 
             {{ if not .DisableWebAuthn }}
             <!-- WebAuthn -->
@@ -245,7 +246,6 @@
                     {{ end }}
                     </tbody>
                 </table>
-                {{ end }}
                 {{ end }}
             </div>
 
@@ -790,7 +790,7 @@
                     <div class="w-full md:w-1/2 mb-4 md:mb-0 inline-block">
                         <label class="font-semibold text-foreground text-lg" for="select-timezone">{{ .T "settings.wakatime" }}</label>
                         <span class="block text-sm text-muted">
-                            {{ .T "settings.wakatime_connect_desc" }} <a class="link" href="https://wakatime.com/developers#authentication" rel="noopener noreferrer" target="_blank">{{ .T "settings.wakatime_your_api_key" }}</a> {{ .T "settings.wakatime_paste_here" }}<br><br>
+                            {{ .T "settings.wakatime_connect_desc" }} <a class="link" href="https://wakatime.com/settings/account" rel="noopener noreferrer" target="_blank">{{ .T "settings.wakatime_your_api_key" }}</a> {{ .T "settings.wakatime_paste_here" }}<br><br>
                             {{ .T "settings.wakatime_forward_desc" }} <span class="text-xs font-mono">https://&lt;your-server&gt;/api/compat/wakatime/v1</span> {{ .T "settings.wakatime_as_url" }}<br><br>
                             {{ .T "settings.wakatime_privacy_note" }} (<a
                                 class="link" target="_blank" href="https://github.com/muety/wakapi/issues/94" rel="noopener noreferrer">#94</a>) {{ .T "settings.wakatime_privacy_note_suffix" }}

@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/duke-git/lancet/v2/condition"
 	datastructure "github.com/duke-git/lancet/v2/datastructure/set"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
-	"github.com/gofrs/uuid/v5"
 	"github.com/gorilla/schema"
 
 	conf "github.com/muety/wakapi/config"
@@ -335,16 +336,8 @@ func (h *SettingsHandler) actionChangePassword(w http.ResponseWriter, r *http.Re
 		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
 	}
 
-	login := &models.Login{
-		Username: user.ID,
-		Password: user.Password,
-	}
-	encoded, err := h.config.Security.SecureCookie.Encode(models.AuthCookieKey, login.Username)
-	if err != nil {
-		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
-	}
-
-	http.SetCookie(w, h.config.CreateCookie(models.AuthCookieKey, encoded))
+	// note: no need to re-issue the auth cookie here — since upstream 2.17.x it only carries
+	// the username and is derived from the master cookie key, so it survives a password change
 	return actionResult{http.StatusOK, i18n.Translate(lang, "flash.password_was_updated"), "", nil}
 }
 
@@ -366,6 +359,12 @@ func (h *SettingsHandler) actionChangeUserId(w http.ResponseWriter, r *http.Requ
 
 	if _, err := h.userSrvc.ChangeUserId(user, newUserId); err != nil {
 		return actionResult{http.StatusInternalServerError, "", i18n.Translate(lang, "flash.internal_server_error"), nil}
+	}
+
+	oidcProviders := h.config.Security.ListOidcProviders()
+	if slices.Contains(oidcProviders, user.AuthType) {
+		// OIDC Users will remain authenticated, just return ok
+		return actionResult{http.StatusOK, fmt.Sprintf(i18n.Translate(lang, "flash.username_changed_oidc"), newUserId), "", nil}
 	}
 
 	routeutils.SetSuccess(r, w, fmt.Sprintf(i18n.Translate(lang, "flash.username_changed"), newUserId))
@@ -690,7 +689,7 @@ func (h *SettingsHandler) actionSetWakatimeApiKey(w http.ResponseWriter, r *http
 	}
 
 	// Healthcheck, if a new API key is set, i.e. the feature is activated
-	if (user.WakatimeApiKey == "" && apiKey != "") && !h.validateWakatimeKey(apiKey, apiUrl) {
+	if (user.WakatimeApiKey == "" && apiKey != "") && (!h.validateWakatimeUrl(apiUrl) || !h.validateWakatimeKey(apiKey, apiUrl)) {
 		return actionResult{http.StatusBadRequest, "", i18n.Translate(lang, "flash.wakatime_connect_failed"), nil}
 	}
 
@@ -721,6 +720,11 @@ func (h *SettingsHandler) actionImportWakatime(w http.ResponseWriter, r *http.Re
 	kvKeyLastImport := fmt.Sprintf("%s_%s", conf.KeyLastImport, user.ID)
 	kvKeyLastImportSuccess := fmt.Sprintf("%s_%s", conf.KeyLastImportSuccess, user.ID)
 
+	importer := imports.NewWakatimeImporter(user.WakatimeApiKey, useLegacyImporter)
+	if err := importer.Validate(user); err != nil {
+		return actionResult{http.StatusForbidden, "", fmt.Sprintf("Failed to import – %v", err), nil}
+	}
+
 	if !h.config.IsDev() {
 		lastImport, _ := time.Parse(time.RFC822, h.keyValueSrvc.MustGetString(kvKeyLastImport).Value)
 		if time.Now().Sub(lastImport) < time.Duration(h.config.App.ImportBackoffMin)*time.Minute {
@@ -743,9 +747,8 @@ func (h *SettingsHandler) actionImportWakatime(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	go func(user *models.User, r *http.Request) {
+	go func(user *models.User, importer *imports.WakatimeImporter, r *http.Request) {
 		start := time.Now()
-		importer := imports.NewWakatimeImporter(user.WakatimeApiKey, useLegacyImporter)
 
 		countBefore, _ := h.heartbeatSrvc.CountByUser(user)
 
@@ -811,7 +814,7 @@ func (h *SettingsHandler) actionImportWakatime(w http.ResponseWriter, r *http.Re
 				slog.Info("sent import notification mail", "userID", user.ID)
 			}
 		}
-	}(user, r)
+	}(user, importer, r)
 
 	h.keyValueSrvc.PutString(&models.KeyStringValue{
 		Key:   kvKeyLastImport,
@@ -903,7 +906,7 @@ func (h *SettingsHandler) actionGenerateInvite(w http.ResponseWriter, r *http.Re
 
 	user := middlewares.GetPrincipal(r)
 	lang := routeutils.ResolveLanguage(r, user)
-	inviteCode := uuid.Must(uuid.NewV4()).String()[0:8]
+	inviteCode := uuid.NewV4().String()[0:8]
 
 	if err := h.keyValueSrvc.PutString(&models.KeyStringValue{
 		Key:   fmt.Sprintf("%s_%s", conf.KeyInviteCode, inviteCode),
@@ -920,6 +923,10 @@ func (h *SettingsHandler) actionGenerateInvite(w http.ResponseWriter, r *http.Re
 			valueInviteCode: inviteCode,
 		},
 	}
+}
+
+func (h *SettingsHandler) validateWakatimeUrl(baseUrl string) bool {
+	return routeutils.ValidateWakatimeUrl(baseUrl) == nil
 }
 
 func (h *SettingsHandler) validateWakatimeKey(apiKey string, baseUrl string) bool {
@@ -974,7 +981,7 @@ func (h *SettingsHandler) actionAddApiKey(w http.ResponseWriter, r *http.Request
 	}
 
 	lang := routeutils.ResolveLanguage(r, middlewares.GetPrincipal(r))
-	apiKey := uuid.Must(uuid.NewV4()).String()
+	apiKey := uuid.NewV4().String()
 
 	if _, err := h.apiKeySrvc.Create(&models.ApiKey{
 		User:     middlewares.GetPrincipal(r),

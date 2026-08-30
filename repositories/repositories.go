@@ -43,6 +43,7 @@ type IHeartbeatRepository interface {
 	StreamWithin(time.Time, time.Time, *models.User) (chan *models.Heartbeat, error)
 	StreamWithinByFilters(time.Time, time.Time, *models.User, map[string][]string) (chan *models.Heartbeat, error)
 	StreamWithinBatched(time.Time, time.Time, *models.User, int) (chan []*models.Heartbeat, error)
+	StreamByUserBatched(*models.User, int) (chan []*models.Heartbeat, error)
 	Count(bool) (int64, error)
 	CountByUser(*models.User) (int64, error)
 	CountByUsers([]*models.User) ([]*models.CountByUser, error)
@@ -50,7 +51,7 @@ type IHeartbeatRepository interface {
 	DeleteBefore(time.Time) error
 	DeleteByUser(*models.User) error
 	DeleteByUserBefore(*models.User, time.Time) error
-	GetUserProjectStats(*models.User, time.Time, time.Time, string, int, int) ([]*models.ProjectStats, error)
+	GetUserProjectStats(*models.User, time.Time, time.Time) ([]*models.ProjectStats, error)
 	GetUserAgentsByUser(user *models.User) ([]*models.UserAgent, error)
 }
 
@@ -108,10 +109,13 @@ type ISummaryRepository interface {
 	Insert(*models.Summary) error
 	InsertWithRetry(*models.Summary) error
 	GetAll() ([]*models.Summary, error)
+	GetByUser(*models.User) ([]*models.Summary, error)
 	GetByUserWithin(*models.User, time.Time, time.Time) ([]*models.Summary, error)
 	GetLastByUser() ([]*models.TimeByUser, error)
+	GetLastBySingleUser(string) (time.Time, error)
 	DeleteByUser(string) error
 	DeleteByUserBefore(string, time.Time) error
+	DeleteByUserAfter(string, time.Time) error
 }
 
 type IUserRepository interface {

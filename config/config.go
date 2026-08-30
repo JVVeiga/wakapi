@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -17,14 +18,15 @@ import (
 	"encoding/gob"
 	"log/slog"
 	"net/url"
+	"uuid"
 
-	"github.com/gofrs/uuid/v5"
 	"github.com/gorilla/securecookie"
 	"github.com/jinzhu/configor"
 	"github.com/muety/wakapi/data"
 	"github.com/muety/wakapi/utils"
 	"github.com/robfig/cron/v3"
 
+	"github.com/becheran/wildmatch-go"
 	"github.com/go-webauthn/webauthn/webauthn"
 )
 
@@ -45,12 +47,14 @@ const (
 	KeyInviteCode                   = "invite"
 	KeySharedData                   = "shared_data"
 
-	CookieKeySession               = "wakapi_session"
-	CookieKeyAuth                  = "wakapi_auth"
-	SessionValueOidcState          = "oidc_state"
-	SessionValueOidcIdTokenPayload = "oidc_id_token"
-	SessionValueWebAuthn           = "webauthn_session"
-	SessionValueWebAuthnExpiresAt  = "webauthn_session_expires_at"
+	CookieKeySession              = "wakapi_session"
+	CookieKeyAuth                 = "wakapi_auth"
+	CookieKeyOidcIdToken          = "oidc_id_token"
+	CookieKeyOidcRefreshToken     = "oidc_refresh_token"
+	CookieKeyOidcProvider         = "oidc_provider"
+	SessionValueOidcState         = "oidc_state"
+	SessionValueWebAuthn          = "webauthn_session"
+	SessionValueWebAuthnExpiresAt = "webauthn_session_expires_at"
 
 	SimpleDateFormat     = "2006-01-02"
 	SimpleDateTimeFormat = "2006-01-02 15:04:05"
@@ -106,6 +110,7 @@ type appConfig struct {
 	ImportBackoffMin          int                          `yaml:"import_backoff_min" default:"5" env:"WAKAPI_IMPORT_BACKOFF_MIN"`
 	ImportMaxRate             int                          `yaml:"import_max_rate" default:"24" env:"WAKAPI_IMPORT_MAX_RATE"` // at max one successful import every x hours
 	ImportBatchSize           int                          `yaml:"import_batch_size" default:"50" env:"WAKAPI_IMPORT_BATCH_SIZE"`
+	ImportHostsWhitelist      []string                     `yaml:"import_hosts_whitelist"` // or WAKAPI_IMPORT_HOSTS_WHITELIST (read manually during load)
 	InactiveDays              int                          `yaml:"inactive_days" default:"7" env:"WAKAPI_INACTIVE_DAYS"`
 	HeartbeatMaxAge           string                       `yaml:"heartbeat_max_age" default:"168h" env:"WAKAPI_HEARTBEAT_MAX_AGE"`
 	CountCacheTTLMin          int                          `yaml:"count_cache_ttl_min" default:"30" env:"WAKAPI_COUNT_CACHE_TTL_MIN"`
@@ -126,6 +131,7 @@ type appConfig struct {
 type securityConfig struct {
 	AllowSignup      bool `yaml:"allow_signup" default:"true" env:"WAKAPI_ALLOW_SIGNUP"`
 	OidcAllowSignup  bool `yaml:"oidc_allow_signup" default:"true" env:"WAKAPI_OIDC_ALLOW_SIGNUP"`
+	OidcInsecure     bool `yaml:"oidc_insecure" default:"false" env:"WAKAPI_OIDC_INSECURE"`
 	DisableLocalAuth bool `yaml:"disable_local_auth" default:"false" env:"WAKAPI_DISABLE_LOCAL_AUTH"`
 	DisableWebAuthn  bool `yaml:"disable_webauthn" default:"true" env:"WAKAPI_DISABLE_WEBAUTHN"`
 	SignupCaptcha    bool `yaml:"signup_captcha" default:"false" env:"WAKAPI_SIGNUP_CAPTCHA"`
@@ -134,19 +140,19 @@ type securityConfig struct {
 	EnableProxy      bool `yaml:"enable_proxy" default:"false" env:"WAKAPI_ENABLE_PROXY"` // only intended for production instance at wakapi.dev
 	DisableFrontpage bool `yaml:"disable_frontpage" default:"false" env:"WAKAPI_DISABLE_FRONTPAGE"`
 	// this is actually a pepper (https://en.wikipedia.org/wiki/Pepper_(cryptography))
-	PasswordSalt                 string                     `yaml:"password_salt" default:"" env:"WAKAPI_PASSWORD_SALT"`
-	InsecureCookies              bool                       `yaml:"insecure_cookies" default:"false" env:"WAKAPI_INSECURE_COOKIES"`
-	CookieMaxAgeSec              int                        `yaml:"cookie_max_age" default:"172800" env:"WAKAPI_COOKIE_MAX_AGE"`
-	TrustedHeaderAuth            bool                       `yaml:"trusted_header_auth" default:"false" env:"WAKAPI_TRUSTED_HEADER_AUTH"`
-	TrustedHeaderAuthKey         string                     `yaml:"trusted_header_auth_key" default:"Remote-User" env:"WAKAPI_TRUSTED_HEADER_AUTH_KEY"`
-	TrustedHeaderAuthAllowSignup bool                       `yaml:"trusted_header_auth_allow_signup" default:"false" env:"WAKAPI_TRUSTED_HEADER_AUTH_ALLOW_SIGNUP"`
-	TrustReverseProxyIps         string                     `yaml:"trust_reverse_proxy_ips" default:"" env:"WAKAPI_TRUST_REVERSE_PROXY_IPS"` // comma-separated list of trusted reverse proxy ips
-	SignupMaxRate                string                     `yaml:"signup_max_rate" default:"5/1h" env:"WAKAPI_SIGNUP_MAX_RATE"`
-	LoginMaxRate                 string                     `yaml:"login_max_rate" default:"10/1m" env:"WAKAPI_LOGIN_MAX_RATE"`
-	PasswordResetMaxRate         string                     `yaml:"password_reset_max_rate" default:"5/1h" env:"WAKAPI_PASSWORD_RESET_MAX_RATE"`
-	SecureCookie                 *securecookie.SecureCookie `yaml:"-"`
-	SessionKey                   []byte                     `yaml:"-"`
-	OidcProviders                []oidcProviderConfig       `yaml:"oidc"`
+	PasswordSalt                 string               `yaml:"password_salt" default:"" env:"WAKAPI_PASSWORD_SALT"`
+	InsecureCookies              bool                 `yaml:"insecure_cookies" default:"false" env:"WAKAPI_INSECURE_COOKIES"`
+	CookieMaxAgeSec              int                  `yaml:"cookie_max_age" default:"172800" env:"WAKAPI_COOKIE_MAX_AGE"`
+	TrustedHeaderAuth            bool                 `yaml:"trusted_header_auth" default:"false" env:"WAKAPI_TRUSTED_HEADER_AUTH"`
+	TrustedHeaderAuthKey         string               `yaml:"trusted_header_auth_key" default:"Remote-User" env:"WAKAPI_TRUSTED_HEADER_AUTH_KEY"`
+	TrustedHeaderAuthAllowSignup bool                 `yaml:"trusted_header_auth_allow_signup" default:"false" env:"WAKAPI_TRUSTED_HEADER_AUTH_ALLOW_SIGNUP"`
+	TrustReverseProxyIps         string               `yaml:"trust_reverse_proxy_ips" default:"" env:"WAKAPI_TRUST_REVERSE_PROXY_IPS"` // comma-separated list of trusted reverse proxy ips
+	SignupMaxRate                string               `yaml:"signup_max_rate" default:"5/1h" env:"WAKAPI_SIGNUP_MAX_RATE"`
+	LoginMaxRate                 string               `yaml:"login_max_rate" default:"10/1m" env:"WAKAPI_LOGIN_MAX_RATE"`
+	PasswordResetMaxRate         string               `yaml:"password_reset_max_rate" default:"5/1h" env:"WAKAPI_PASSWORD_RESET_MAX_RATE"`
+	CookieKey                    string               `yaml:"cookie_key" default:"" env:"WAKAPI_COOKIE_KEY"` // base64 encoded key, used to derive session and authentication keys
+	CookieKeyBytes               []byte               `yaml:"-"`
+	OidcProviders                []oidcProviderConfig `yaml:"oidc"`
 	trustReverseProxyIpsParsed   []net.IPNet
 }
 
@@ -169,16 +175,18 @@ type dbConfig struct {
 }
 
 type serverConfig struct {
-	Port             int    `default:"3000" env:"WAKAPI_PORT"`
-	ListenIpV4       string `yaml:"listen_ipv4" default:"127.0.0.1" env:"WAKAPI_LISTEN_IPV4"`
-	ListenIpV6       string `yaml:"listen_ipv6" default:"::1" env:"WAKAPI_LISTEN_IPV6"`
-	ListenSocket     string `yaml:"listen_socket" default:"" env:"WAKAPI_LISTEN_SOCKET"`
-	ListenSocketMode uint32 `yaml:"listen_socket_mode" default:"0666" env:"WAKAPI_LISTEN_SOCKET_MODE"`
-	TimeoutSec       int    `yaml:"timeout_sec" default:"30" env:"WAKAPI_TIMEOUT_SEC"`
-	BasePath         string `yaml:"base_path" default:"/" env:"WAKAPI_BASE_PATH"`
-	PublicUrl        string `yaml:"public_url" default:"http://localhost:3000" env:"WAKAPI_PUBLIC_URL"`
-	TlsCertPath      string `yaml:"tls_cert_path" default:"" env:"WAKAPI_TLS_CERT_PATH"`
-	TlsKeyPath       string `yaml:"tls_key_path" default:"" env:"WAKAPI_TLS_KEY_PATH"`
+	Port             int      `default:"3000" env:"WAKAPI_PORT"`
+	ListenIpV4       string   `yaml:"listen_ipv4" default:"127.0.0.1" env:"WAKAPI_LISTEN_IPV4"`
+	ListenIpV6       string   `yaml:"listen_ipv6" default:"::1" env:"WAKAPI_LISTEN_IPV6"`
+	ListenSocket     string   `yaml:"listen_socket" default:"" env:"WAKAPI_LISTEN_SOCKET"`
+	ListenSocketMode uint32   `yaml:"listen_socket_mode" default:"0666" env:"WAKAPI_LISTEN_SOCKET_MODE"`
+	TimeoutSec       int      `yaml:"timeout_sec" default:"30" env:"WAKAPI_TIMEOUT_SEC"`
+	LogFormat        string   `yaml:"log_format" default:"text" env:"WAKAPI_LOG_FORMAT"`
+	BasePath         string   `yaml:"base_path" default:"/" env:"WAKAPI_BASE_PATH"`
+	PublicUrl        string   `yaml:"public_url" default:"http://localhost:3000" env:"WAKAPI_PUBLIC_URL"`
+	PublicNetUrl     *url.URL `yaml:"-"`
+	TlsCertPath      string   `yaml:"tls_cert_path" default:"" env:"WAKAPI_TLS_CERT_PATH"`
+	TlsKeyPath       string   `yaml:"tls_key_path" default:"" env:"WAKAPI_TLS_KEY_PATH"`
 }
 
 type subscriptionsConfig struct {
@@ -416,6 +424,18 @@ func (c *appConfig) HeartbeatsMaxAge() time.Duration {
 	return d
 }
 
+func (c *appConfig) IsImportHostWhitelisted(host string) bool {
+	if len(c.ImportHostsWhitelist) == 0 {
+		return true
+	}
+	for _, p := range c.ImportHostsWhitelist {
+		if wildmatch.NewWildMatch(p).IsMatch(host) {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *securityConfig) ParseTrustReverseProxyIPs() {
 	c.trustReverseProxyIpsParsed = make([]net.IPNet, 0)
 
@@ -552,7 +572,7 @@ func readColors() map[string]map[string]string {
 	return colors
 }
 
-func resolveDbDialect(dbType string) string {
+func ResolveDbDialect(dbType string) string {
 	if dbType == "cockroach" {
 		return "postgres"
 	}
@@ -570,6 +590,9 @@ func Set(config *Config) {
 }
 
 func Get() *Config {
+	if cfg == nil {
+		cfg = Empty()
+	}
 	return cfg
 }
 
@@ -584,7 +607,7 @@ func Load(configFlag string, version string) *Config {
 
 	env = config.Env
 
-	InitLogger(config.IsDev())
+	InitLogger(config.Server.LogFormat)
 
 	config.Version = strings.TrimSpace(version)
 	tagVersionMatch, _ := regexp.MatchString(`\d+\.\d+\.\d+`, config.Version)
@@ -592,9 +615,9 @@ func Load(configFlag string, version string) *Config {
 		config.Version = "v" + config.Version
 	}
 
-	config.InstanceId = uuid.Must(uuid.NewV4()).String()
+	config.InstanceId = uuid.NewV4().String()
 	config.App.Colors = readColors()
-	config.Db.Dialect = resolveDbDialect(config.Db.Type)
+	config.Db.Dialect = ResolveDbDialect(config.Db.Type)
 	if config.Db.Type == "cockroach" {
 		slog.Warn("cockroach is not officially supported, it is strongly recommended to migrate to postgres instead")
 	}
@@ -603,24 +626,28 @@ func Load(configFlag string, version string) *Config {
 		os.Exit(1)
 	}
 
-	hashKey := securecookie.GenerateRandomKey(64)
-	blockKey := securecookie.GenerateRandomKey(32)
-	sessionKey := securecookie.GenerateRandomKey(32)
-
-	if IsDev(env) {
-		slog.Warn("⚠️ using temporary keys to sign and encrypt cookies in dev mode, make sure to set env to production for real-world use")
-		hashKey, blockKey = getTemporarySecureKeys()
-		blockKey = hashKey
+	cookieKey, err := base64.StdEncoding.DecodeString(config.Security.CookieKey)
+	if err != nil {
+		slog.Warn("⚠️ Failed to decode cookie key, generating a random one")
+		cookieKey = securecookie.GenerateRandomKey(128)
 	}
-	if config.Security.InsecureCookies {
-		slog.Warn("⚠️ it is strongly advised NOT to use insecure cookies, are you sure about this setting?")
+	if len(cookieKey) == 0 {
+		// No cookie key provided, lets generate a random one
+		cookieKey = securecookie.GenerateRandomKey(128)
 	}
+	if len(cookieKey) < 32 {
+		slog.Warn("⚠️ Cookie key is too short, it is recommended to use at least 32 bytes for security reasons")
+	}
+	config.Security.CookieKeyBytes = cookieKey
 
-	config.Security.SecureCookie = securecookie.New(hashKey, blockKey)
-	config.Security.SessionKey = sessionKey
 	config.Security.ParseTrustReverseProxyIPs()
 
 	config.Server.BasePath = strings.TrimSuffix(config.Server.BasePath, "/")
+	if publicUrlParsed, err := url.Parse(config.Server.GetPublicUrl()); err == nil {
+		config.Server.PublicNetUrl = publicUrlParsed
+	} else {
+		Log().Fatal("failed to parse public url")
+	}
 
 	for k, v := range config.App.CustomLanguages {
 		if v == "" {
@@ -634,6 +661,13 @@ func Load(configFlag string, version string) *Config {
 		}
 		slog.Info("enabling sentry integration", "environment", config.Sentry.Environment)
 		initSentry(config.Sentry, config.IsDev(), config.Version)
+	}
+
+	if hosts := os.Getenv("WAKAPI_IMPORT_HOSTS_WHITELIST"); hosts != "" {
+		config.App.ImportHostsWhitelist = strings.Split(hosts, ",")
+		for i := range config.App.ImportHostsWhitelist {
+			config.App.ImportHostsWhitelist[i] = strings.TrimSpace(config.App.ImportHostsWhitelist[i])
+		}
 	}
 
 	if config.App.DataRetentionMonths <= 0 {
@@ -716,6 +750,7 @@ func Load(configFlag string, version string) *Config {
 	// post config-load tasks
 	initOpenIDConnect(config)
 	InitWebAuthn(config)
+	InitializeCookies()
 
 	return Get()
 }

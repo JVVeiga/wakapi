@@ -12,6 +12,7 @@ import (
 	"github.com/duke-git/lancet/v2/random"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
@@ -47,18 +48,33 @@ func NewLoginHandler(userService services.IUserService, mailService services.IMa
 
 func (h *LoginHandler) RegisterRoutes(router chi.Router) {
 	router.Get("/login", h.GetIndex)
+
+	loginLimit, loginWindow := h.config.Security.GetLoginMaxRate()
 	router.
-		With(httprate.LimitByRealIP(h.config.Security.GetLoginMaxRate())).
+		With(httprate.LimitBy(loginLimit, loginWindow, func(r *http.Request) (string, error) {
+			return httprate.CanonicalizeIP(middleware.GetClientIP(r.Context())), nil
+		})).
 		Post("/login", h.PostLogin)
+
 	router.Get("/signup", h.GetSignup)
+
+	signupLimit, signupWindow := h.config.Security.GetSignupMaxRate()
 	router.
-		With(httprate.LimitByRealIP(h.config.Security.GetSignupMaxRate())).
+		With(httprate.LimitBy(signupLimit, signupWindow, func(r *http.Request) (string, error) {
+			return httprate.CanonicalizeIP(middleware.GetClientIP(r.Context())), nil
+		})).
 		Post("/signup", h.PostSignup)
+
 	router.Get("/set-password", h.GetSetPassword)
 	router.Post("/set-password", h.PostSetPassword)
+
 	router.Get("/reset-password", h.GetResetPassword)
+
+	resetLimit, resetWindow := h.config.Security.GetPasswordResetMaxRate()
 	router.
-		With(httprate.LimitByRealIP(h.config.Security.GetPasswordResetMaxRate())).
+		With(httprate.LimitBy(resetLimit, resetWindow, func(r *http.Request) (string, error) {
+			return httprate.CanonicalizeIP(middleware.GetClientIP(r.Context())), nil
+		})).
 		Post("/reset-password", h.PostResetPassword)
 	router.Get("/oidc/{provider}/login", h.GetOidcLogin)
 	router.Get("/oidc/{provider}/callback", h.GetOidcCallback)
@@ -148,7 +164,7 @@ func (h *LoginHandler) PostLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.finishUserLogin(user, r, w)
+	h.finishUserLogin(user, r, w, true)
 	http.Redirect(w, r, fmt.Sprintf("%s/summary", h.config.Server.BasePath), http.StatusFound)
 }
 
@@ -160,8 +176,11 @@ func (h *LoginHandler) PostLogout(w http.ResponseWriter, r *http.Request) {
 	if user := middlewares.GetPrincipal(r); user != nil {
 		h.userSrvc.FlushUserCache(user.ID)
 	}
-	routeutils.ClearSession(r, w)                                    // clear all session data
-	http.SetCookie(w, h.config.GetClearCookie(models.AuthCookieKey)) // clear auth token
+	routeutils.ClearSession(r, w)                                                // clear all session data
+	http.SetCookie(w, h.config.GetClearCookie(models.AuthCookieKey))             // clear auth token
+	http.SetCookie(w, h.config.GetClearCookie(models.OidcIdTokenCookieKey))      // clear oidc id token
+	http.SetCookie(w, h.config.GetClearCookie(models.OidcRefreshTokenCookieKey)) // clear oidc refresh token
+	http.SetCookie(w, h.config.GetClearCookie(models.OidcProviderCookieKey))     // clear oidc provider cookie
 	http.Redirect(w, r, fmt.Sprintf("%s/", h.config.Server.BasePath), http.StatusFound)
 }
 
@@ -427,9 +446,6 @@ func (h *LoginHandler) GetOidcCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	state := r.URL.Query().Get("state")
 
-	// clear any existing id token on the session, just because
-	routeutils.ClearOidcIdTokenPayload(r, w)
-
 	// validate oauth state param
 	savedState := routeutils.GetOidcState(r)
 	if state == "" || savedState != state {
@@ -442,7 +458,7 @@ func (h *LoginHandler) GetOidcCallback(w http.ResponseWriter, r *http.Request) {
 	routeutils.ClearOidcState(r, w)
 
 	// exchange auth code for access token and id token
-	authToken, err := provider.OAuth2.Exchange(r.Context(), code)
+	authToken, err := provider.OAuth2.Exchange(conf.GetOidcContext(r.Context()), code)
 	if err != nil {
 		errMsg := i18n.Translate(lang, "flash.oidc_exchange_failed")
 		conf.Log().Request(r).Error(errMsg, "provider", provider.Name)
@@ -462,7 +478,7 @@ func (h *LoginHandler) GetOidcCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// verify id token
-	idTokenPayload, err := routeutils.DecodeOidcIdToken(rawIdToken, provider, r.Context())
+	idTokenPayload, err := routeutils.DecodeOidcIdToken(rawIdToken, provider, conf.GetOidcContext(r.Context()))
 	if err != nil || idTokenPayload == nil {
 		errMsg := i18n.Translate(lang, "flash.oidc_verify_failed")
 		conf.Log().Request(r).Error(errMsg, "provider", provider.Name, "id_token", rawIdToken) // save to log, because does not grant any access
@@ -488,14 +504,12 @@ func (h *LoginHandler) GetOidcCallback(w http.ResponseWriter, r *http.Request) {
 					"email", existingUser.Email,
 				)
 				user = existingUser
-				routeutils.SetOidcIdTokenPayload(idTokenPayload, r, w)
-				h.finishUserLogin(user, r, w)
-				http.Redirect(w, r, fmt.Sprintf("%s/summary", h.config.Server.BasePath), http.StatusFound)
-				return
 			}
 		}
+	}
 
-		// create new user account
+	// create new user account
+	if user == nil {
 		if !h.config.IsDev() && !h.config.Security.OidcAllowSignup {
 			routeutils.SetError(r, w, i18n.Translate(lang, "flash.signup_disabled"))
 			http.Redirect(w, r, fmt.Sprintf("%s/login", h.config.Server.BasePath), http.StatusFound)
@@ -531,8 +545,13 @@ func (h *LoginHandler) GetOidcCallback(w http.ResponseWriter, r *http.Request) {
 		user = newUser
 	}
 
-	routeutils.SetOidcIdTokenPayload(idTokenPayload, r, w) // save to session, only used by middleware for automatic redirection upon expiry
-	h.finishUserLogin(user, r, w)
+	http.SetCookie(w, h.config.CreateCookie(models.OidcIdTokenCookieKey, rawIdToken))
+	if authToken.RefreshToken != "" {
+		http.SetCookie(w, h.config.CreateCookie(models.OidcRefreshTokenCookieKey, authToken.RefreshToken))
+	}
+	http.SetCookie(w, h.config.CreateCookie(models.OidcProviderCookieKey, provider.Name))
+
+	h.finishUserLogin(user, r, w, false)
 	http.Redirect(w, r, fmt.Sprintf("%s/summary", h.config.Server.BasePath), http.StatusFound)
 }
 
@@ -630,14 +649,16 @@ func (h *LoginHandler) PostLoginWebAuthn(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	h.finishUserLogin(user, r, w)
+	h.finishUserLogin(user, r, w, true)
 	http.Redirect(w, r, fmt.Sprintf("%s/summary", h.config.Server.BasePath), http.StatusFound)
 }
 
 func (h *LoginHandler) buildViewModel(r *http.Request, w http.ResponseWriter, withCaptcha bool) *view.LoginViewModel {
+	numUsers, _ := h.userSrvc.Count()
 
 	vm := &view.LoginViewModel{
 		SharedViewModel:  view.NewSharedViewModel(h.config, nil, r, nil),
+		TotalUsers:       int(numUsers),
 		AllowSignup:      h.config.IsDev() || h.config.Security.AllowSignup,
 		InviteCode:       r.URL.Query().Get("invite"),
 		DisableLocalAuth: h.config.Security.DisableLocalAuth,
@@ -670,20 +691,21 @@ func (h *LoginHandler) getOidcProvider(w http.ResponseWriter, r *http.Request) *
 	return provider
 }
 
-func (h *LoginHandler) finishUserLogin(user *models.User, r *http.Request, w http.ResponseWriter) {
-	encoded, err := h.config.Security.SecureCookie.Encode(models.AuthCookieKey, user.ID)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		conf.Log().Request(r).Error("failed to encode secure cookie", "error", err)
-		lang := routeutils.ResolveLanguage(r, nil)
-		templates[conf.LoginTemplate].Execute(w, h.buildViewModel(r, w, false).WithError(i18n.Translate(lang, "flash.internal_server_error")))
-		return
+func (h *LoginHandler) finishUserLogin(user *models.User, r *http.Request, w http.ResponseWriter, setAuthCookie bool) {
+	if setAuthCookie {
+		cookie, err := routeutils.CreateAuthCookie(user.ID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			conf.Log().Request(r).Error("failed to encode secure cookie", "error", err)
+			lang := routeutils.ResolveLanguage(r, nil)
+			templates[conf.LoginTemplate].Execute(w, h.buildViewModel(r, w, false).WithError(i18n.Translate(lang, "flash.internal_server_error")))
+			return
+		}
+		http.SetCookie(w, cookie)
 	}
 
 	user.LastLoggedInAt = models.CustomTime(time.Now())
 	h.userSrvc.Update(user)
-
-	http.SetCookie(w, h.config.CreateCookie(models.AuthCookieKey, encoded))
 }
 
 func (h *LoginHandler) coalesceExistingUser(username string) string {
