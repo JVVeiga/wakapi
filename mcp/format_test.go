@@ -1,8 +1,10 @@
 package mcp
 
 import (
+	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/muety/wakapi/models"
 	"github.com/stretchr/testify/assert"
@@ -33,9 +35,9 @@ func TestFmtDateRange(t *testing.T) {
 
 func TestFmtItems(t *testing.T) {
 	items := []*models.SummaryItem{
-		{Key: "Go", Total: time.Duration(3600)},       // 3600 seconds = 1h
-		{Key: "Python", Total: time.Duration(1800)},    // 1800 seconds = 30min
-		{Key: "Rust", Total: time.Duration(900)},       // 900 seconds = 15min
+		{Key: "Go", Total: time.Duration(3600)},     // 3600 seconds = 1h
+		{Key: "Python", Total: time.Duration(1800)}, // 1800 seconds = 30min
+		{Key: "Rust", Total: time.Duration(900)},    // 900 seconds = 15min
 	}
 	total := 6300 * time.Second // 1h45min
 
@@ -111,4 +113,25 @@ func TestMaxItem(t *testing.T) {
 
 	assert.Nil(t, maxItem(nil))
 	assert.Nil(t, maxItem([]*models.SummaryItem{}))
+}
+
+func TestFmtTable_AlignsMultiByteCells(t *testing.T) {
+	// accented names and box-drawing characters are multi-byte; widths must be counted
+	// in runes, otherwise fmt's rune-based padding over-pads by the byte/rune difference
+	out := fmtTable(
+		[]string{"Projeto", "Barra"},
+		[][]string{
+			{"gestão", "█████░░░░░"},
+			{"api", "░░░░░░░░░░"},
+		},
+	)
+
+	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
+	assert.Len(t, lines, 4) // header + separator + 2 rows
+
+	width := utf8.RuneCountInString(lines[0])
+	for i, l := range lines {
+		assert.Equal(t, width, utf8.RuneCountInString(l), "linha %d desalinhada: %q", i, l)
+	}
+	assert.Contains(t, out, "gestão")
 }

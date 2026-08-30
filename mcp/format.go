@@ -5,6 +5,7 @@ import (
 	"math"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/muety/wakapi/models"
 )
@@ -55,14 +56,17 @@ func fmtTopItems(items []*models.SummaryItem, limit int) string {
 }
 
 func fmtTable(headers []string, rows [][]string) string {
+	// Widths are measured in runes, not bytes: fmt's "%-*s" pads by rune count, so
+	// measuring with len() over-pads any non-ASCII cell (accented project names,
+	// box-drawing characters) by the difference and breaks the column alignment.
 	widths := make([]int, len(headers))
 	for i, h := range headers {
-		widths[i] = len(h)
+		widths[i] = utf8.RuneCountInString(h)
 	}
 	for _, row := range rows {
 		for i, cell := range row {
-			if i < len(widths) && len(cell) > widths[i] {
-				widths[i] = len(cell)
+			if w := utf8.RuneCountInString(cell); i < len(widths) && w > widths[i] {
+				widths[i] = w
 			}
 		}
 	}
