@@ -110,7 +110,7 @@ func (h *StatsHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	filters := helpers.ParseSummaryFilters(r)
 
-	if authorizedUser == nil || requestedUser.ID != authorizedUser.ID {
+	if !isOwnData && !isAdmin && !isTeamOwnerOrCoOwner {
 		// third parties may only filter by entity types the user has opted in to share, otherwise, filtered totals would leak the existence and duration of private entities
 		if err := routeutils.CheckFilterPermissions(filters, requestedUser); err != nil {
 			w.WriteHeader(http.StatusForbidden)
