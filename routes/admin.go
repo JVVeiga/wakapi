@@ -49,7 +49,7 @@ func NewAdminHandler(
 func (h *AdminHandler) RegisterRoutes(router chi.Router) {
 	r := chi.NewRouter()
 
-	authMiddleware := middlewares.NewAuthenticateMiddleware(h.userSrvc)
+	authMiddleware := middlewares.NewWebAuthenticateMiddleware(h.userSrvc)
 	authMiddleware = authMiddleware.WithRedirectTarget(defaultErrorRedirectTarget())
 	authMiddleware = authMiddleware.WithRedirectErrorMessage("unauthorized")
 	adminMiddleware := middlewares.NewRequireAdminMiddleware()
