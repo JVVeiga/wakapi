@@ -135,6 +135,17 @@ POST /api/compat/wakatime/v1/users/{user}/heartbeats.bulk
 6. Se nenhum: 401 ou redirect para /login
 ```
 
+Desde o upstream 2.18, cada rota escolhe quais modalidades aceita. **API key só autentica
+endpoints de API**; páginas web aceitam apenas cookie, OIDC e trusted header.
+
+| Construtor | Modalidades | Usado em |
+|------------|-------------|----------|
+| `NewWebAuthenticateMiddleware` | Cookie, OIDC, Trusted Header | Rotas MVC: `/summary`, `/settings`, `/projects`, `/leaderboard`, `/teams/*`, `/admin/*`, `/lang`, `/` |
+| `NewApiAuthenticateMiddleware` | Cookie, OIDC, API Key, Trusted Header | `/api/*`, incluindo `/api/compat/wakatime/v1/*` (leaders e monitored-sites) |
+| `NewAuthenticateMiddleware` | Todas | Não use em rotas novas; escolha uma das variantes acima |
+
+O MCP (`/mcp`) não usa esse middleware e mantém a autenticação própria por API key (ver abaixo).
+
 ### Métodos de Autenticação
 
 | Método | Formato | Uso |
@@ -243,6 +254,13 @@ indicador "AI Coding Ratio" da tela de summary:
 ```
 ratio = tempo("ai coding") / (tempo("ai coding") + tempo("coding"))
 ```
+
+> **Desde o upstream 2.18**, heartbeats com `type=app` e categoria `ai coding` (o "thinking
+> time" de agentes de IA, sem arquivo associado) são excluídos das durations e, portanto, dos
+> summaries (`models.ExcludeFromDurations`). Só a atividade de IA ligada a arquivos entra no
+> ratio. Summaries agregados antes do deploy da 2.18 ainda contam o thinking time, então
+> comparações entre períodos que cruzam o deploy podem mostrar queda artificial do ratio até
+> que os summaries sejam regenerados.
 
 `get_ai_adoption` usa summaries persistidos (uma consulta por membro).
 `get_ai_project_analysis` usa durations (também uma consulta por membro), porque a duration
