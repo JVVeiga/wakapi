@@ -307,8 +307,8 @@ Wrapper sobre `time.Time` que suporta unmarshalling de timestamps Python (format
 | Modelo | Índices |
 |--------|---------|
 | User | `idx_user_email` |
-| Heartbeat | `idx_time`, `idx_time_user`, `idx_user_project`, `idx_project`, `idx_branch`, `idx_language`, `idx_editor`, `idx_operating_system`, `idx_machine` |
-| Duration | `idx_time_duration`, `idx_time_duration_user` |
+| Heartbeat | `idx_time`, `idx_time_user_project_lang` (UserID, Time, Project, Language), `idx_user_project_time` (UserID, Project, Time), `idx_branch`, `idx_language`, `idx_editor`, `idx_ai_model`, `idx_operating_system`, `idx_machine` |
+| Duration | `idx_time_duration_user` (o índice só de `time` foi removido no upstream 2.18) |
 | Summary | `idx_time_summary_user` (UserID, FromTime, ToTime) |
 | SummaryItem | `idx_type` |
 | Alias | `idx_alias_user`, `idx_alias_type_key` |
@@ -318,3 +318,5 @@ Wrapper sobre `time.Time` que suporta unmarshalling de timestamps Python (format
 | LeaderboardItem | `idx_leaderboard_user`, `idx_leaderboard_combined` |
 | TeamLeaderboardItem | `idx_team_lb_combined` (TeamID, Interval) |
 | TeamInvite | uniqueIndex (Code), index (TeamID) |
+
+> **Upstream 2.18:** a migration `20261011_replace_heartbeats_project_idx` troca `idx_time_user`, `idx_user_project` e `idx_project` pelo composto `idx_user_project_time`. Em bancos grandes, a criação do índice pode deixar o primeiro boot após o deploy lento.

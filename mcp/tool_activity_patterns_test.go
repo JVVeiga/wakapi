@@ -28,7 +28,7 @@ func TestActivityPatterns_Success(t *testing.T) {
 		},
 	}
 	durationSrvc.On("Get", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(durations, nil)
-	heartbeatSrvc.On("GetLatestByUser", mock.Anything).Return(&models.Heartbeat{
+	heartbeatSrvc.On("GetLatestByUser", mock.Anything, false).Return(&models.Heartbeat{
 		Time: models.CustomTime(now),
 	}, nil)
 
@@ -46,6 +46,33 @@ func TestActivityPatterns_Success(t *testing.T) {
 	assert.Contains(t, text, "bob")
 	assert.Contains(t, text, "Sessões:")
 	assert.Contains(t, text, "Dias ativos:")
+	assert.Contains(t, text, "Última atividade:")
+}
+
+// The heartbeat repository returns a zero-value heartbeat (not nil) when a user has none;
+// it must not be rendered as a bogus "last activity" date.
+func TestActivityPatterns_ZeroLatestHeartbeat(t *testing.T) {
+	srv, userSrvc, teamSrvc, _, heartbeatSrvc, durationSrvc := newMCPServerWithMocks()
+
+	teamSrvc.On("IsTeamOwnerOrCoOwner", "team1", "alice").Return(true, nil)
+	teamSrvc.On("IsTeamMember", "team1", "bob").Return(true, nil)
+	userSrvc.On("GetUserById", "bob").Return(&models.User{ID: "bob"}, nil)
+
+	durations := models.Durations{
+		&models.Duration{Time: models.CustomTime(time.Now().Add(-time.Hour)), Duration: 30 * time.Minute},
+	}
+	durationSrvc.On("Get", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(durations, nil)
+	heartbeatSrvc.On("GetLatestByUser", mock.Anything, false).Return(&models.Heartbeat{}, nil)
+
+	_, handler := srv.activityPatternsTool()
+	result, err := handler(ctxWithUser(&models.User{ID: "alice"}), makeRequest(map[string]any{
+		"team_id": "team1",
+		"user_id": "bob",
+	}))
+
+	assert.Nil(t, err)
+	assert.False(t, result.IsError)
+	assert.NotContains(t, extractText(result), "Última atividade:")
 }
 
 func TestActivityPatterns_NoDurations(t *testing.T) {

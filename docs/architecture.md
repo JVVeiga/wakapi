@@ -210,11 +210,11 @@ wakapi/
 2. Middleware global: limpeza de path, logging, recovery
 3. Router Chi despacha para rootRouter (/) ou apiRouter (/api)
 4. Middleware de segurança (headers CSP, X-Frame-Options)
-5. Middleware de autenticação:
+5. Middleware de autenticação (cada rota define as modalidades aceitas; API key só em rotas de API):
    a. Tenta OIDC token
    b. Tenta cookie de sessão
-   c. Tenta API key no header Authorization
-   d. Tenta API key na query string
+   c. Tenta API key no header Authorization (somente rotas de API)
+   d. Tenta API key na query string (somente rotas de API)
    e. Tenta trusted header (reverse proxy)
 6. Handler processa a request
    - Extrai parâmetros

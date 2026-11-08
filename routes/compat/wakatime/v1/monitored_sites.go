@@ -29,7 +29,7 @@ func NewMonitoredSitesHandler(
 
 func (h *MonitoredSitesHandler) RegisterRoutes(router chi.Router) {
 	router.Group(func(r chi.Router) {
-		r.Use(middlewares.NewAuthenticateMiddleware(h.userSrvc).Handler)
+		r.Use(middlewares.NewApiAuthenticateMiddleware(h.userSrvc).Handler)
 		r.Get("/compat/wakatime/v1/monitored-sites", h.Get)
 	})
 }

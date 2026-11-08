@@ -393,6 +393,8 @@
   "time_picker.all_time": "Todo o Período",
   "time_picker.start": "Início:",
   "time_picker.end": "Fim:",
+  "time_picker.previous_period": "Período anterior",
+  "time_picker.next_period": "Próximo período",
 
   "index.title": "Acompanhe Seu Tempo de Codificação",
   "index.subtitle": "O Wakapi é uma ferramenta open-source que ajuda você a acompanhar o tempo gasto programando em diferentes projetos, linguagens de programação e mais. Ideal para quem adora estatísticas.",
@@ -703,6 +705,9 @@
   "flash.import_started": "Importação iniciada. Isso levará vários minutos. Por favor, volte mais tarde.",
   "flash.summaries_regenerating": "Resumos estão sendo regenerados - isso pode levar alguns minutos, por favor volte mais tarde",
   "flash.deletion_in_progress": "Exclusão em andamento, isso pode levar alguns segundos",
+  "flash.user_updated_regen_manually": "Usuário atualizado com sucesso, por favor regenere seus resumos manualmente",
+  "flash.user_updated_regenerating_tz": "Usuário atualizado com sucesso, seus resumos estão sendo regenerados para o novo fuso horário - isso pode levar alguns minutos",
+  "flash.deletion_already_in_progress": "A exclusão de dados deste usuário já está em andamento, tente novamente mais tarde",
   "flash.invite_generated": "Código de convite gerado com sucesso (veja abaixo)",
   "flash.api_key_added": "Você adicionou uma nova chave de API: %s",
   "flash.main_apikey_regen_only": "A chave de API principal só pode ser regenerada, não excluída",

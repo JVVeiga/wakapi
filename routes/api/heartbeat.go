@@ -37,7 +37,7 @@ func NewHeartbeatApiHandler(userService services.IUserService, heartbeatService 
 func (h *HeartbeatApiHandler) RegisterRoutes(router chi.Router) {
 	router.Group(func(r chi.Router) {
 		r.Use(
-			middlewares.NewAuthenticateMiddleware(h.userSrvc).WithOptionalForMethods(http.MethodOptions).WithFullAccessOnly(true).Handler,
+			middlewares.NewApiAuthenticateMiddleware(h.userSrvc).WithOptionalForMethods(http.MethodOptions).WithFullAccessOnly(true).Handler,
 			customMiddleware.NewWakatimeRelayMiddleware().Handler,
 		)
 		// see https://github.com/muety/wakapi/issues/203
@@ -84,6 +84,7 @@ func (h *HeartbeatApiHandler) Post(w http.ResponseWriter, r *http.Request) {
 	parsedHeader, _ := utils.ParseUserAgent(userAgentHeader)
 	machineNameHeader := r.Header.Get("X-Machine-Name")
 
+	phCache := newPlaceholderCache(user, h.heartbeatSrvc)
 	creationResults := make(v1.HeartbeatCreationResults, len(heartbeats))
 	validHeartbeats := make([]*models.Heartbeat, 0, len(heartbeats))
 
@@ -116,7 +117,7 @@ func (h *HeartbeatApiHandler) Post(w http.ResponseWriter, r *http.Request) {
 			aiModel = hb.AIModel
 		}
 
-		hb = fillPlaceholders(hb, user, h.heartbeatSrvc)
+		hb = fillPlaceholders(hb, phCache)
 
 		hb.User = user
 		hb.UserID = user.ID
@@ -178,8 +179,45 @@ func makeBulkResponse(results []*v1.HeartbeatCreationResult) *v1.HeartbeatRespon
 	return vm
 }
 
+// Request-scoped, lazily populated cache for resolving heartbeat placeholders, not safe for concurrent use.
+// Note that even after adding service-level caching, this cache still makes sense:
+// if a batch of 30 heartbeats is processed (in fillPlaceholders()) while service cache is cold, it would fire 30 identical queries, while this one shrinks it to one
+type placeholderCache struct {
+	user            *models.User
+	srv             services.IHeartbeatService
+	latest          *models.Heartbeat
+	latestByProject map[string]*models.Heartbeat
+}
+
+func newPlaceholderCache(user *models.User, srv services.IHeartbeatService) *placeholderCache {
+	return &placeholderCache{user: user, srv: srv, latestByProject: make(map[string]*models.Heartbeat)}
+}
+
+func (c *placeholderCache) getLatest() *models.Heartbeat {
+	if c.latest == nil {
+		latest, err := c.srv.GetLatestByUser(c.user, false)
+		if err != nil {
+			return nil
+		}
+		c.latest = latest
+	}
+	return c.latest
+}
+
+func (c *placeholderCache) getLatestByProject(project string) *models.Heartbeat {
+	if latest, ok := c.latestByProject[project]; ok {
+		return latest
+	}
+	latest, err := c.srv.GetLatestByFilters(c.user, models.NewFiltersWith(models.SummaryProject, project), false)
+	if err != nil {
+		return nil
+	}
+	c.latestByProject[project] = latest
+	return latest
+}
+
 // inplace!
-func fillPlaceholders(hb *models.Heartbeat, user *models.User, srv services.IHeartbeatService) *models.Heartbeat {
+func fillPlaceholders(hb *models.Heartbeat, cache *placeholderCache) *models.Heartbeat {
 	// wakatime has a special keyword that indicates to use the most recent project for a given heartbeat
 	// in chrome, the browser extension sends this keyword for (most?) heartbeats
 	// presumably the idea behind this is that if you're coding, your browsing activity will likely also relate to that coding project
@@ -189,23 +227,30 @@ func fillPlaceholders(hb *models.Heartbeat, user *models.User, srv services.IHea
 		hb.ClearPlaceholders() // ignore placeholders for data sent by browser plugin
 	}
 
+	var latestHeartbeat *models.Heartbeat
+
 	if hb.IsPlaceholderProject() {
 		// get project of latest heartbeat by user
-		if latest, err := srv.GetLatestByUser(user); latest != nil && err == nil {
+		if latest := cache.getLatest(); latest != nil {
 			hb.Project = latest.Project
+			latestHeartbeat = latest
 		}
 	}
 
 	if hb.IsPlaceholderLanguage() {
 		// get language of latest heartbeat by user and project
-		if latest, err := srv.GetLatestByFilters(user, models.NewFiltersWith(models.SummaryProject, hb.Project)); latest != nil && err == nil {
+		if latestHeartbeat != nil && latestHeartbeat.Project == hb.Project {
+			hb.Language = latestHeartbeat.Language // reuse the one we just found above
+		} else if latest := cache.getLatestByProject(hb.Project); latest != nil {
 			hb.Language = latest.Language
 		}
 	}
 
 	if hb.IsPlaceholderBranch() {
 		// get branch of latest heartbeat by user and project
-		if latest, err := srv.GetLatestByFilters(user, models.NewFiltersWith(models.SummaryProject, hb.Project)); latest != nil && err == nil {
+		if latestHeartbeat != nil && latestHeartbeat.Project == hb.Project {
+			hb.Branch = latestHeartbeat.Branch // reuse the one we just found above
+		} else if latest := cache.getLatestByProject(hb.Project); latest != nil {
 			hb.Branch = latest.Branch
 		}
 	}

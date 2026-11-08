@@ -34,24 +34,29 @@ Todas as interfaces estão definidas em `services/services.go`. A implementaçã
 - **Cache:** 24h TTL para contagens, sem expiração para entity sets
 - **Eventos publicados:** `EventHeartbeatCreate` (a cada batch inserido)
 - **Métodos-chave:** Insert, InsertBatch, Count, GetAllWithin, StreamAllWithin, GetUserProjectStats
+- **Latest heartbeat cacheado:** `GetLatestByUser(user, skipCache)` e `GetLatestByFilters(user, filters, skipCache)` usam cache no serviço. Passe `skipCache=false` em leituras comuns (ex.: tool `get_activity_patterns` do MCP). Sem heartbeats, o retorno é um heartbeat de valor zero (`Time` zero), não `nil`
 
 ### DurationService (`services/duration.go`)
 - **Dependências:** DurationRepository, HeartbeatService, UserService, LanguageMappingService
 - **Responsabilidades:** Converte heartbeats em durações (sessões de trabalho)
 - **Algoritmo:** Agrupa heartbeats por gap máximo (timeout), calcula duração contínua
+- **Exclusões (upstream 2.18):** heartbeats que casam com `models.ExcludeFromDurations` (hoje `type=app` + categoria `ai coding`, o "thinking time" de agentes de IA) não geram durations e não aparecem em nenhuma estatística
+- **Regeneração incremental:** só recalcula o trecho final de intervalos ausentes; heartbeats fora de ordem apagam as durations sobrepostas
 - **Métodos-chave:** Get (live ou cache), Regenerate, RegenerateAll
 
 ### SummaryService (`services/summary.go`)
 - **Dependências:** SummaryRepository, HeartbeatService, DurationService, AliasService, ProjectLabelService
 - **Responsabilidades:** Gera resumos agregados com breakdown por entidade
-- **Cache:** 24h TTL por usuário
-- **Métodos-chave:** Aliased (entry point principal), Retrieve (do banco), Summarize (do zero)
+- **Cache:** 24h TTL por usuário, com chaves rastreadas por usuário para invalidação direcionada
+- **Fuso horário (upstream 2.18):** summaries são alinhados aos limites de dia do fuso do usuário. Trocar o fuso em Settings dispara a regeneração dos summaries
+- **Métodos-chave:** Aliased (entry point principal), Retrieve (do banco), Summarize (do zero), MergeSummariesAcrossUsers (fork: agrega summaries de vários usuários, usado em times)
 
 ### AggregationService (`services/aggregation.go`)
 - **Dependências:** UserService, SummaryService, HeartbeatService, DurationService
 - **Responsabilidades:** Job em background que regenera summaries diariamente
 - **Schedule:** Cron configurável (default: 02:15 AM)
-- **Métodos-chave:** AggregateSummaries, AggregateDurations
+- **Métodos-chave:** AggregateSummaries (recebe um `DurationsRegenerationMode`), AggregateDurations, IsLocked
+- **Locking:** lock por usuário com exclusão mútua. `SettingsHandler.tryLockAggregation` faz test-and-set atômico e combina o lock local com `IsLocked`; a exclusão de dados do usuário usa o mesmo lock
 
 ## Serviços de Suporte
 

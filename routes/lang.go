@@ -25,7 +25,7 @@ func NewLanguageHandler(userService services.IUserService) *LanguageHandler {
 
 func (h *LanguageHandler) RegisterRoutes(router chi.Router) {
 	r := chi.NewRouter()
-	r.Use(middlewares.NewAuthenticateMiddleware(h.userService).WithOptionalFor("/").Handler)
+	r.Use(middlewares.NewWebAuthenticateMiddleware(h.userService).WithOptionalFor("/").Handler)
 	r.Get("/", h.GetSwitch)
 	router.Mount("/lang", r)
 }

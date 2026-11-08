@@ -84,7 +84,7 @@ func (h *LoginHandler) RegisterRoutes(router chi.Router) {
 		router.Post("/webauthn/login", h.PostLoginWebAuthn)
 	}
 
-	authMiddleware := middlewares.NewAuthenticateMiddleware(h.userSrvc).
+	authMiddleware := middlewares.NewWebAuthenticateMiddleware(h.userSrvc).
 		WithRedirectTarget(defaultErrorRedirectTarget()).
 		WithRedirectErrorMessage("unauthorized").
 		WithOptionalFor("/logout")
