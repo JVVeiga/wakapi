@@ -1,6 +1,6 @@
 package models
 
-import "github.com/gofrs/uuid/v5"
+import "uuid"
 
 const (
 	TeamRoleOwner   = "owner"
@@ -49,7 +49,7 @@ type TeamPermissions struct {
 
 func NewTeam(name, description, ownerID string) *Team {
 	return &Team{
-		ID:          uuid.Must(uuid.NewV4()).String(),
+		ID:          uuid.NewV4().String(),
 		Name:        name,
 		Description: description,
 		OwnerID:     ownerID,

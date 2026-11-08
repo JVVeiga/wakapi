@@ -6,8 +6,8 @@ import (
 	"math"
 	"strings"
 	"time"
+	"uuid"
 
-	"github.com/gofrs/uuid/v5"
 	"github.com/patrickmn/go-cache"
 
 	"github.com/muety/wakapi/config"
@@ -328,7 +328,7 @@ func (srv *TeamService) invalidateByPrefix(prefix string) {
 const invitePageSize = 5
 
 func (srv *TeamService) GenerateInvite(teamID, creatorID string) (*models.TeamInvite, error) {
-	code := uuid.Must(uuid.NewV4()).String()
+	code := uuid.NewV4().String()
 	now := models.CustomTime(time.Now())
 	expiresAt := models.CustomTime(time.Now().Add(24 * time.Hour))
 
