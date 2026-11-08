@@ -28,7 +28,7 @@ func TestActivityPatterns_Success(t *testing.T) {
 		},
 	}
 	durationSrvc.On("Get", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(durations, nil)
-	heartbeatSrvc.On("GetLatestByUser", mock.Anything).Return(&models.Heartbeat{
+	heartbeatSrvc.On("GetLatestByUser", mock.Anything, false).Return(&models.Heartbeat{
 		Time: models.CustomTime(now),
 	}, nil)
 

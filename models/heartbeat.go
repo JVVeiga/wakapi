@@ -12,14 +12,39 @@ import (
 	"github.com/gohugoio/hashstructure"
 )
 
+const (
+	// https://github.com/wakatime/wakatime-cli/blob/5fb9caaef329a697c196ab67747d7875b5749c8b/pkg/heartbeat/entity.go#L24-L29
+	HeartbeatTypeFile   = "file"
+	HeartbeatTypeDomain = "domain"
+	HeartbeatTypeUrl    = "url"
+	HeartbeatTypeEvent  = "event"
+	HeartbeatTypeApp    = "app"
+)
+
+const (
+	// https://github.com/wakatime/wakatime-cli/blob/5fb9caaef329a697c196ab67747d7875b5749c8b/pkg/heartbeat/category.go#L63-L84
+	HeartbeatCategoryAiCoding = "ai coding"
+)
+
+type HeartbeatExclusionFilter struct {
+	Type     string
+	Category string
+}
+
+// ExcludeFromDurations holds heartbeats which shall be excluded when aggregating durations, and thus won't contribute to any kind of statistics.
+// E.g. exclude heartbeats sent by AI coding agents to capture "thinking time", i.e. AI session activity without a file entity associated (see https://github.com/muety/wakapi/issues/964).
+var ExcludeFromDurations = []HeartbeatExclusionFilter{
+	{Type: HeartbeatTypeApp, Category: HeartbeatCategoryAiCoding},
+}
+
 type Heartbeat struct {
 	ID              uint64 `json:"-" gorm:"primary_key" hash:"ignore"`
 	User            *User  `json:"-" gorm:"not null; constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" hash:"ignore"`
-	UserID          string `json:"-" gorm:"not null; index:idx_time_user; index:idx_time_user_project_lang,priority:1; index:idx_user_project"` // idx_user_project is for quickly fetching a user's project list (settings page)
+	UserID          string `json:"-" gorm:"not null; index:idx_time_user_project_lang,priority:1; index:idx_user_project_time,priority:1"` // idx_time_user_project_lang is for quickly fetching a user's heartbeats within a time range, idx_user_project_time for fetching a user's project list (settings page) and latest heartbeats per project
 	Entity          string `json:"entity" gorm:"not null"`
 	Type            string `json:"type" gorm:"size:255"`
 	Category        string `json:"category" gorm:"size:255"`
-	Project         string `json:"project" gorm:"index:idx_project; index:idx_time_user_project_lang,priority:3; index:idx_user_project"`
+	Project         string `json:"project" gorm:"index:idx_time_user_project_lang,priority:3; index:idx_user_project_time,priority:2"`
 	Branch          string `json:"branch" gorm:"index:idx_branch"`
 	Language        string `json:"language" gorm:"index:idx_language; index:idx_time_user_project_lang,priority:4"`
 	IsWrite         bool   `json:"is_write"`
@@ -30,7 +55,7 @@ type Heartbeat struct {
 	UserAgent       string `json:"user_agent" hash:"ignore" gorm:"type:varchar(255)"`
 	// note: on sqlite, the time column is stored as INTEGER (Unix epoch milliseconds) rather than TEXT
 	// see https://github.com/muety/wakapi/issues/882 for details
-	Time             CustomTime `json:"time" gorm:"timeScale:3; index:idx_time; index:idx_time_user; index:idx_time_user_project_lang,priority:2; not null" swaggertype:"primitive,number"`
+	Time             CustomTime `json:"time" gorm:"timeScale:3; index:idx_time; index:idx_time_user_project_lang,priority:2; index:idx_user_project_time,priority:3; not null" swaggertype:"primitive,number"`
 	Hash             string     `json:"-" hash:"ignore" gorm:"type:varchar(17); uniqueIndex"`
 	Origin           string     `json:"-" hash:"ignore" gorm:"type:varchar(255)"`
 	OriginId         string     `json:"-" hash:"ignore" gorm:"type:varchar(255)"`

@@ -393,6 +393,8 @@
   "time_picker.all_time": "All Time",
   "time_picker.start": "Start:",
   "time_picker.end": "End:",
+  "time_picker.previous_period": "Previous period",
+  "time_picker.next_period": "Next period",
 
   "index.title": "Keep Track of Your Coding Time",
   "index.subtitle": "Wakapi is an open-source tool that helps you keep track of the time you have spent coding on different projects in different programming languages and more. Ideal for statistics freaks and anyone else.",
@@ -703,6 +705,9 @@
   "flash.import_started": "Import started. This will take several minutes. Please check back later.",
   "flash.summaries_regenerating": "Summaries are being regenerated - this may take up to a couple of minutes, please come back later",
   "flash.deletion_in_progress": "Deletion in progress, this may take a couple of seconds",
+  "flash.user_updated_regen_manually": "User updated successfully, please regenerate your summaries manually",
+  "flash.user_updated_regenerating_tz": "User updated successfully, your summaries are being regenerated to match your new time zone - this may take up to a couple of minutes",
+  "flash.deletion_already_in_progress": "Data deletion for this user is already in progress, try again later",
   "flash.invite_generated": "Successfully generated new invite code (see below)",
   "flash.api_key_added": "You added new API key: %s",
   "flash.main_apikey_regen_only": "Main API key can only be regenerated, not deleted",

@@ -14,8 +14,9 @@ import (
 
 type IAggregationService interface {
 	Schedule()
-	AggregateSummaries(set datastructure.Set[string]) error
-	AggregateDurations(set datastructure.Set[string]) error
+	AggregateSummaries(datastructure.Set[string], types.DurationsRegenerationMode) error
+	AggregateDurations(datastructure.Set[string]) error
+	IsLocked(string) bool
 }
 
 type IMiscService interface {
@@ -52,12 +53,13 @@ type IHeartbeatService interface {
 	GetRangeByUser(*models.User) (*models.RangeByUser, error)
 	GetFirstByUser(*models.User) (time.Time, error)
 	GetLastByUser(*models.User) (time.Time, error)
-	GetLatestByUser(*models.User) (*models.Heartbeat, error)
+	GetLatestByUser(*models.User, bool) (*models.Heartbeat, error)
 	GetLatestByOriginAndUser(string, *models.User) (*models.Heartbeat, error)
-	GetLatestByFilters(*models.User, *models.Filters) (*models.Heartbeat, error)
+	GetLatestByFilters(*models.User, *models.Filters, bool) (*models.Heartbeat, error)
 	GetEntitySetByUser(uint8, string) ([]string, error)
 	StreamAllWithin(time.Time, time.Time, *models.User) (chan *models.Heartbeat, error)
 	StreamAllWithinRaw(time.Time, time.Time, *models.User) (chan *models.Heartbeat, error)
+	StreamAllWithinExcludingHeartbeats(time.Time, time.Time, *models.User, []models.HeartbeatExclusionFilter) (chan *models.Heartbeat, error)
 	StreamAllWithinByFilters(time.Time, time.Time, *models.User, *models.Filters) (chan *models.Heartbeat, error)
 	DeleteBefore(time.Time) error
 	DeleteByUser(*models.User) error
@@ -111,6 +113,8 @@ type IDurationService interface {
 	Regenerate(*models.User, bool)
 	RegenerateAll()
 	DeleteByUser(*models.User) error
+	DeleteByUserBefore(*models.User, time.Time) error
+	DeleteByUserAfter(*models.User, time.Time) error
 }
 
 type ISummaryService interface {

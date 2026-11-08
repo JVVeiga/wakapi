@@ -41,6 +41,7 @@ type IHeartbeatRepository interface {
 	GetLatestByUser(*models.User) (*models.Heartbeat, error)
 	GetLatestByOriginAndUser(string, *models.User) (*models.Heartbeat, error)
 	StreamWithin(time.Time, time.Time, *models.User) (chan *models.Heartbeat, error)
+	StreamWithinExcludingHeartbeats(time.Time, time.Time, *models.User, []models.HeartbeatExclusionFilter) (chan *models.Heartbeat, error)
 	StreamWithinByFilters(time.Time, time.Time, *models.User, map[string][]string) (chan *models.Heartbeat, error)
 	StreamWithinBatched(time.Time, time.Time, *models.User, int) (chan []*models.Heartbeat, error)
 	StreamByUserBatched(*models.User, int) (chan []*models.Heartbeat, error)
@@ -66,6 +67,7 @@ type IDurationRepository interface {
 	GetLatestByUser(*models.User) (*models.Duration, error)
 	DeleteByUser(*models.User) error
 	DeleteByUserBefore(*models.User, time.Time) error
+	DeleteByUserAfter(*models.User, time.Time) error
 }
 
 type IDiagnosticsRepository interface {

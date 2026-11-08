@@ -85,7 +85,7 @@ func (s *MCPServer) activityPatternsTool() (mcpgo.Tool, mcpserver.ToolHandlerFun
 		sb.WriteString(fmt.Sprintf("Dias ativos: %d/%d", len(activeDays), totalDays))
 
 		// Last activity
-		if hb, err := s.heartbeatSrvc.GetLatestByUser(targetUser); err == nil && hb != nil {
+		if hb, err := s.heartbeatSrvc.GetLatestByUser(targetUser, false); err == nil && hb != nil && !hb.Time.T().IsZero() {
 			sb.WriteString(fmt.Sprintf(" | Última atividade: %s", hb.Time.T().In(targetUser.TZ()).Format("02/01 15:04")))
 		}
 		sb.WriteString("\n")

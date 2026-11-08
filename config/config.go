@@ -546,15 +546,7 @@ func IsDev(env string) bool {
 }
 
 func readColors() map[string]map[string]string {
-	// Read language colors
-	// Source:
-	// - https://raw.githubusercontent.com/ozh/github-colors/master/colors.json
-	// - https://wakatime.com/colors/operating_systems
-	// - https://wakatime.com/colors/editors
-	// Extracted from Wakatime website with XPath (see below) and did a bit of regex magic after.
-	// - $x('//span[@class="editor-icon tip"]/@data-original-title').map(e => e.nodeValue)
-	// - $x('//span[@class="editor-icon tip"]/div[1]/text()').map(e => e.nodeValue)
-
+	// see scripts/convert_colors.py
 	raw := data.ColorsFile
 	if IsDev(env) {
 		if _, err := os.Stat(colorsFile); err == nil {
@@ -776,6 +768,12 @@ func BeginningOfWakatime() time.Time {
 
 func initOpenIDConnect(config *Config) {
 	// openid connect
+	for i := range config.Security.OidcProviders {
+		if name := strings.ToLower(config.Security.OidcProviders[i].Name); name != config.Security.OidcProviders[i].Name {
+			slog.Warn("oidc provider name is not lowercase, normalizing it", "provider", config.Security.OidcProviders[i].Name, "normalized", name)
+			config.Security.OidcProviders[i].Name = name
+		}
+	}
 	for _, c := range config.Security.OidcProviders {
 		RegisterOidcProvider(&c)
 		slog.Info("registered openid connect provider", "provider", c.Name)
@@ -783,6 +781,11 @@ func initOpenIDConnect(config *Config) {
 }
 
 func InitWebAuthn(config *Config) {
+	if config.Security.DisableWebAuthn {
+		slog.Info("webauthn is disabled, skipping initialization")
+		return
+	}
+
 	gob.Register(&webauthn.SessionData{})
 
 	parsedURL, err := url.Parse(config.Server.PublicUrl)
